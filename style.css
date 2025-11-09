@@ -1,0 +1,138 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f8ff; /* 淺藍色背景 */
+    color: #333;
+    text-align: center;
+    padding: 20px;
+}
+
+.game-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 20px auto;
+    border: 3px solid #00008b; /* 深藍色海峽 */
+    background-color: #add8e6; /* 淺藍海 */
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.bank {
+    width: 300px;
+    min-height: 400px;
+    background-color: #f4a460; /* 土地顏色 */
+    border: 2px solid #8b4513; /* 土地邊界 */
+    border-radius: 10px;
+    padding: 10px;
+}
+.bank h2 {
+    margin-top: 0;
+}
+
+.river-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 400px;
+}
+
+.boat {
+    width: 160px;
+    height: 80px;
+    background-color: #8b4513; /* 船的木頭色 */
+    border: 2px solid #5a2d0c;
+    border-radius: 5px;
+    margin: 50px 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 1s ease-in-out; /* 船移動的動畫 */
+}
+
+/* 讓船在右邊 (中國) 時的樣式 */
+.boat.at-china {
+    transform: translateX(200px); /* 簡易的移動效果 */
+}
+
+/* 讓船在左邊 (台灣) 時的樣式 */
+.boat.at-taiwan {
+    transform: translateX(-200px); /* 簡易的移動效果 */
+}
+
+#move-button {
+    font-size: 1.2em;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #4CAF50; /* 綠色按鈕 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+#move-button:hover {
+    background-color: #45a049;
+}
+
+.character-area {
+    min-height: 50px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 5px;
+}
+
+.character {
+    border: 1px solid #333;
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    user-select: none; /* 防止選取文字 */
+    transition: background-color 0.3s;
+}
+.character:hover {
+    background-color: #eee;
+}
+
+/* 陳玉珍的特別樣式 */
+.character.chenyuzhen {
+    background-color: #f0e68c; /* 顯眼的黃色 */
+    font-weight: bold;
+    width: 100px; /* 佔位較大 */
+}
+
+/* 角色死亡時的樣式 */
+.character.dead {
+    text-decoration: line-through;
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* 狀態顯示區域 */
+.status-container {
+    display: flex;
+    justify-content: space-around;
+    max-width: 1200px;
+    margin: 20px auto;
+}
+.status-box {
+    width: 45%;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    min-height: 150px;
+    text-align: left;
+}
+.status-box h3 {
+    text-align: center;
+    margin-top: 0;
+}
+.status-box ul {
+    padding-left: 20px;
+    max-height: 200px;
+    overflow-y: auto; /* 訊息過多時捲動 */
+}
