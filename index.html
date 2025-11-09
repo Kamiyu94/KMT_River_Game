@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國民黨立委過河遊戲</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>國民黨立委過河遊戲</h1>
+    <div class="game-container">
+        <div id="bank-taiwan" class="bank">
+            <h2>台灣 (Taiwan)</h2>
+            <div id="bank-taiwan-chars" class="character-area">
+                </div>
+        </div>
+
+        <div class="river-area">
+            <div id="boat" class="boat">
+                <div id="boat-chars" class="character-area">
+                    </div>
+            </div>
+            <button id="move-button">🚢 開船 (Move) 🚢</button>
+        </div>
+
+        <div id="bank-china" class="bank">
+            <h2>中國 (China)</h2>
+            <div id="bank-china-chars" class="character-area">
+                </div>
+        </div>
+    </div>
+
+    <div class="status-container">
+        <div id="death-list" class="status-box">
+            <h3>💀 死亡名單 💀</h3>
+            <ul></ul>
+        </div>
+        <div id="game-log" class="status-box">
+            <h3>📜 遊戲日誌 📜</h3>
+            <ul></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
