@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遊戲規則 - 立委過河</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 針對規則頁面的額外樣式 */
+        body {
+            background-color: #f5f5f5; /* 淺灰色背景 */
+        }
+        .rules-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 2px solid #00008b;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .rules-container h1, .rules-container h2 {
+            text-align: center;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+        }
+        .rules-container ul {
+            padding-left: 30px;
+        }
+        .rules-container li {
+            margin-bottom: 10px; /* 增加行距 */
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 1.2em;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .back-link:hover {
+            background-color: #45a049;
+        }
+        .danger {
+            color: #d9534f;
+            font-weight: bold;
+        }
+        .safe {
+            color: #5cb85c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="rules-container">
+        <h1>📜 遊戲規則 📜</h1>
+
+        <h2>🎯 遊戲目標</h2>
+        <ul>
+            <li><span class="safe">玩家勝利 (投誠)：</span> <strong>存活 5 人 (含) 以上</strong>，並且所有倖存者都抵達中國 (左岸)。</li>
+            <li><span class="danger">台灣人民勝利 (失敗)：</span> 所有立委都死亡，或者倖存者雖抵達中國但不足 5 人。</li>
+        </ul>
+
+        <h2>🚢 基礎規則</h2>
+        <ul>
+            <li><strong>船隻容量：</strong> 2 個船位。</li>
+            <li><strong>陳玉珍：</strong> 她一人佔 2 個船位，必須自己開船。</li>
+            <li><strong>駕駛員 (會開船)：</strong> 韓國瑜, 朱立倫, 鄭麗文, 羅智強, 陳玉珍, 馬英九。</li>
+            <li><strong>乘客 (不會開船)：</strong> 傅崑萁, 徐巧芯, 王鴻薇, 葉元之, 翁曉玲。</li>
+        </ul>
+
+        <h2>⚠️ 關鍵規則 (必讀)</h2>
+        <ul>
+            <li><span class="danger">【鄭麗文計時器】</span><br>
+                鄭麗文**必須是前 5 位 (含) 抵達中國的成員之一**。如果她是第 6 位或更晚抵達，她會弄沉船，導致所有還在台灣 (右岸) 的人被以叛國罪處刑。</li>
+            <li><span class="danger">【傅崑萁沈船】</span><br>
+                傅崑萁不會開船。如果他試圖掌舵 (例如獨自一人在船上，或搶舵)，船就會沈沒，他會說「都是中央的錯」。</li>
+            <li><span class="danger">【解放軍懲罰】</span><br>
+                如果發生沈船事件，且當時中國岸上人數**不足 5 人**，解放軍會將中國岸上的所有人推入海中。如果中國岸上因此全滅，台灣岸上的人也會被處刑。</li>
+        </ul>
+
+        <h2>👤 角色特殊互動</h2>
+        <ul>
+            <li><strong>傅崑萁：</strong>
+                <ul>
+                    <li>在「台灣」或「船上」時，如果 <strong>朱立倫</strong> 不在場，<strong>韓國瑜</strong> 或 <strong>馬英九</strong> 會把他推下海。</li>
+                    <li>(抵達中國岸上後，他就安全了)。</li>
+                </ul>
+            </li>
+            <li><strong>羅智強：</strong>
+                <ul>
+                    <li>跟誰同船，對方就要付 100 萬買書 (傅有 500 萬，其他人 200 萬)。</li>
+                    <li>(推論：傅可搭 5 次，其他人只能搭 2 次)。</li>
+                    <li>如果對方沒錢，羅智強會被丟下船。</li>
+                </ul>
+            </li>
+            <li><strong>王鴻薇：</strong>
+                <ul>
+                    <li>(不會開船) 只能由「女駕駛」載。唯一解：<strong>鄭麗文</strong>。</li>
+                    <li>跟**任何男立委**同船，她會把男立委推下船。</li>
+                    <li>跟 <strong>徐巧芯</strong> 同船，她會把徐巧芯丟下船。</li>
+                    <li>在「台灣岸上」時，如果 (羅/傅/韓/朱) 四人都不在場，她會隨機推一個男立委下海。</li>
+                </ul>
+            </li>
+            <li><strong>翁曉玲：</strong>
+                <ul>
+                    <li>在「中國岸上」時，如果 <strong>傅崑萁</strong> 或 <strong>鄭麗文</strong> 不在場，她會被丟下海。</li>
+                </ul>
+            </li>
+            <li><strong>徐巧芯：</strong>
+                <ul>
+                    <li>(不會開船) 唯一能壓制她在船上罵人的人是 <strong>鄭麗文</strong>。 (唯一解：必須由鄭麗文載)。</li>
+                </ul>
+            </li>
+            <li><strong>葉元之：</strong>
+                <ul>
+                    <li>不會開船。在船上只會瑟瑟發抖。</li>
+                </ul>
+            </li>
+        </ul>
+
+        <a href="index.html" class="back-link">返回遊戲</a>
+    </div>
+</body>
+</html>
