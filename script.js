@@ -173,13 +173,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 2. 駕駛員檢查
+        // 2. 駕駛員檢查 (已修正優先級)
         const hasDriver = boatChars.some(c => c.canDrive);
         const fuOnBoat = boatChars.some(c => c.id === 'fuqunzhu');
         const yeOnBoat = boatChars.some(c => c.id === 'yeyuanzhi');
 
-        // *** 修正 #1：優先檢查 "沒人會開" ***
-        if (!hasDriver) {
+        // --- 檢查開始 ---
+
+        // (Case 1: 傅崑萁搶著開船)
+        // 條件：傅在船上 "且" 船上 "沒有" 任何 "真正" 會開船的人
+        if (fuOnBoat && !hasDriver) {
+            if (yeOnBoat) {
+                logMessage('船上只有葉元之，傅崑萁別無選擇，決定自己開...他說都是中央的錯！');
+            } else {
+                logMessage('船上沒有駕駛員，傅崑萁搶著掌舵...他說都是中央的錯！');
+            }
+            handleSinking('fuqunzhu'); // 觸發沈船
+            render();
+            return;
+        }
+
+        // (Case 2: 船上沒人會開，傅也不在)
+        // 條件：傅 "不在" 船上 "且" 船上 "沒有" 任何 "真正" 會開船的人
+        if (!fuOnBoat && !hasDriver) {
             if (yeOnBoat) {
                 logMessage('葉元之在船上瑟瑟發抖，但船上沒人會開船！');
             } else {
@@ -188,13 +204,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // *** 修正 #2：傅崑萁的沈船規則 ***
-        // (傅崑萁自己一人，或他想搶舵)
-        if (fuOnBoat && findCharById('fuqunzhu').canDrive === false) { 
-            logMessage('傅崑萁搶著掌舵，說他會開...');
-            handleSinking('fuqunzhu'); // 觸發沈船
-            render();
-            return;
+        // (Case 3: 有真正的駕駛員)
+        // 條件：hasDriver is true
+        // 如果傅崑萁在船上，他會因為有駕駛員在而乖乖坐著。
+        // 如果葉元之在船上，他會瑟瑟發抖，但船依然會開。
+        if (hasDriver && yeOnBoat) {
+            logMessage('船上有駕駛員，葉元之在旁邊瑟瑟發抖，但船還是開了。');
+            // (不 return，繼續往下執行衝突檢查)
         }
 
         // 3. 船上衝突檢查
