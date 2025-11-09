@@ -192,3 +192,15 @@ body {
         padding: 15px 25px; /* 讓按鈕更大、更好按 */
     }
 }
+/* --- 規則連結的樣式 --- */
+.rules-link {
+    display: block;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #00008b;
+    text-decoration: underline;
+}
+
+.rules-link:hover {
+    color: #0000cd;
+}
