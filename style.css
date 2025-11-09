@@ -136,3 +136,59 @@ body {
     max-height: 200px;
     overflow-y: auto; /* 訊息過多時捲動 */
 }
+/* --- 響應式網頁設計 (RWD) --- */
+/* 當螢幕寬度小於或等於 768px 時 (例如手機和平板)，套用以下規則 */
+
+@media (max-width: 768px) {
+
+    /* 1. 讓主要佈局從「水平」變成「垂直」堆疊 */
+    .game-container {
+        flex-direction: column; /* 垂直堆疊 */
+        padding: 10px;
+    }
+
+    /* 2. 讓兩岸和河流都變成 100% 寬度 */
+    .bank, .river-area {
+        width: 100%;
+        min-height: 200px; /* 縮小最小高度 */
+        margin-bottom: 15px; /* 增加間距 */
+    }
+
+    /* 3. 縮小船的移動距離，以符合手機寬度 */
+    .boat.at-taiwan {
+        transform: translateX(100px); /* 減少移動距離 */
+    }
+    .boat.at-china {
+        transform: translateX(-100px); /* 減少移動距離 */
+    }
+
+    /* 4. 讓底下的狀態欄也變成垂直堆疊 */
+    .status-container {
+        flex-direction: column; /* 垂直堆疊 */
+        gap: 15px;
+    }
+
+    .status-box {
+        width: 95%; /* 不要 100%，留點邊 */
+        margin: 0 auto;
+    }
+
+    /* 5. (最重要) 讓角色變大，更容易點擊 */
+    .character {
+        padding: 12px 10px; /* 增加點擊區域 */
+        font-size: 1.1em; /* 字體稍大 */
+        min-width: 80px; /* 確保最小寬度 */
+        text-align: center;
+    }
+
+    /* 6. 讓標題和按鈕字體適中 */
+    h1 {
+        font-size: 1.8em;
+    }
+    h2 {
+        font-size: 1.3em;
+    }
+    #move-button {
+        padding: 15px 25px; /* 讓按鈕更大、更好按 */
+    }
+}
