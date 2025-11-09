@@ -12,15 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameLogUl = document.querySelector('#game-log ul');
 
     // --- 2. 遊戲核心狀態 (Game State) ---
-    // 這是整個遊戲的「大腦」，儲存所有角色的位置、金錢、生死等。
-    let gameState = {
-        boatLocation: 'taiwan', // 船的初始位置
-        characters: [],         // 角色資料
-        deathList: [],        // 死亡名單
-        gameLog: [],          // 遊戲日誌
-        chinaArrivals: [],    // 紀錄抵達中國的順序 (為了鄭麗文規則)
-        isGameOver: false,
-    };
+    let gameState; // 將在 initializeGame 中定義
 
     // --- 3. 角色資料定義 ---
     // 定義所有男立委的 ID (用於王鴻薇規則)
@@ -30,8 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeGame() {
         // 重設遊戲狀態
+        // (台灣在右, 中國在左。初始位置 'taiwan')
         gameState = {
-            boatLocation: 'taiwan',
+            boatLocation: 'taiwan', 
             characters: [
                 // id (唯一), name (顯示), money, canDrive, size (佔位), location, isAlive
                 { id: 'hanguoyu', name: '韓國瑜', money: 200, canDrive: true, size: 1, location: 'taiwan', isAlive: true },
@@ -48,15 +41,21 @@ document.addEventListener('DOMContentLoaded', () => {
             ],
             deathList: [],
             gameLog: [],
-            chinaArrivals: [],
+            chinaArrivals: [], // 紀錄抵達中國的順序 (為了鄭麗文規則)
             isGameOver: false,
         };
-        logMessage('遊戲開始！請將所有立委送往中國。');
+
+        // 重設按鈕
+        moveButton.textContent = "🚢 開船 (Move) 🚢";
+        moveButton.style.backgroundColor = '#4CAF50';
+        moveButton.removeEventListener('click', initializeGame); // 移除可能存在的重置監聽
+        moveButton.addEventListener('click', handleMoveBoat); // 綁定遊戲邏輯
+
+        logMessage('遊戲開始！請將所有立委送往中國 (左岸)。');
         render(); // 繪製遊戲畫面
     }
 
     // --- 4. 遊戲渲染 (Render) ---
-    // 根據 `gameState` 更新畫面 (HTML)
     function render() {
         // 清空所有區域
         bankTaiwan.innerHTML = '';
@@ -65,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deathListUl.innerHTML = '';
         gameLogUl.innerHTML = '';
 
-        // 更新船的位置
+        // 更新船的位置 (at-taiwan 是右邊, at-china 是左邊)
         boatElement.classList.toggle('at-china', gameState.boatLocation === 'china');
         boatElement.classList.toggle('at-taiwan', gameState.boatLocation === 'taiwan');
 
@@ -108,7 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // 捲動到底部
-        gameLogUl.scrollTop = gameLogUl.scrollHeight;
+        if (gameLogUl.children.length > 0) {
+            gameLogUl.scrollTop = gameLogUl.scrollHeight;
+        }
     }
 
     // --- 5. 事件監聽 (Event Listeners) ---
@@ -177,25 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const fuOnBoat = boatChars.some(c => c.id === 'fuqunzhu');
         const yeOnBoat = boatChars.some(c => c.id === 'yeyuanzhi');
 
-        if (fuOnBoat && boatSize === 1) { // 傅崑萁自己一人
-             logMessage('傅崑萁發現自己不會開船...');
-             handleSinking('fuqunzhu'); // 觸發沈船
-             render();
-             return;
-        }
-        if (fuOnBoat && hasDriver) { // 傅崑萁跟駕駛同船，但他想搶
-             logMessage('傅崑萁搶著掌舵...');
-             handleSinking('fuqunzhu'); // 觸發沈船
-             render();
-             return;
-        }
-        if (yeOnBoat && !hasDriver) {
-             logMessage('葉元之在船上瑟瑟發抖，船開不動！');
-             return;
-        }
+        // *** 修正 #1：優先檢查 "沒人會開" ***
         if (!hasDriver) {
-             logMessage('船上沒有人會開船！');
-             return;
+            if (yeOnBoat) {
+                logMessage('葉元之在船上瑟瑟發抖，但船上沒人會開船！');
+            } else {
+                logMessage('船上沒有人會開船！');
+            }
+            return;
+        }
+
+        // *** 修正 #2：傅崑萁的沈船規則 ***
+        // (傅崑萁自己一人，或他想搶舵)
+        if (fuOnBoat && findCharById('fuqunzhu').canDrive === false) { 
+            logMessage('傅崑萁搶著掌舵，說他會開...');
+            handleSinking('fuqunzhu'); // 觸發沈船
+            render();
+            return;
         }
 
         // 3. 船上衝突檢查
@@ -249,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             } else {
                 otherChar.money -= 100;
-                luo.money += 100; // 羅智強錢增加 (非規則，但合理)
+                luo.money += 100; // 羅智強錢增加
                 logMessage(`羅智強兜售書本，${otherChar.name} 支付 100 萬，剩下 $${otherChar.money}萬。`);
             }
         }
@@ -280,79 +279,130 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // 2. 檢查台灣岸上 (船剛離開)
-        checkTaiwanBankRules(departingBank);
+        // --- D. 檢查岸上規則 (Check Bank Rules) ---
+        // *** 修正：每次移動後，都必須重新檢查 "兩邊" 岸上的狀態 ***
+        checkTaiwanBankRules();
+        checkChinaBankRules();
 
-        // 3. 檢查中國岸上 (船剛抵達)
-        checkChinaBankRules(arrivalBank);
-
-        // --- D. 結束回合 ---
+        // --- E. 結束回合 ---
         checkGameEnd(); // 檢查遊戲是否勝利或失敗
         render();       // 重新繪製畫面
     }
 
     /**
-     * 檢查台灣岸上的規則 (王鴻薇)
+     * 檢查台灣岸上的規則 (王鴻薇 + 傅崑萁)
+     * (Bug 2 修正 - 完整替換)
      */
-    function checkTaiwanBankRules(bank) {
-        if (bank !== 'taiwan' || gameState.isGameOver) return; // 只有船剛離開台灣時才檢查
-
+    function checkTaiwanBankRules() {
+        if (gameState.isGameOver) return;
+        
         const taiwanChars = getCharsAtLocation('taiwan');
-        const wangOnTaiwan = taiwanChars.some(c => c.id === 'wanghongwei' && c.isAlive);
-        if (!wangOnTaiwan) return; // 王鴻薇不在台灣，沒事
+        if (taiwanChars.length === 0) return; // 台灣沒人，不用檢查
 
-        // 檢查壓制者是否 "全都不在" 台灣
-        const protectorOnTaiwan = taiwanChars.some(c => WANG_PROTECTORS.includes(c.id) && c.isAlive);
-        if (!protectorOnTaiwan) {
-            // 王鴻薇發動攻擊！
-            const maleVictims = taiwanChars.filter(c => MALE_IDS.includes(c.id) && c.isAlive);
-            if (maleVictims.length > 0) {
-                const victim = maleVictims[Math.floor(Math.random() * maleVictims.length)]; // 隨機挑一個
-                logMessage(`(羅、傅、韓、朱) 都不在台灣，王鴻薇失控，將 ${victim.name} 推入台灣海峽！`);
-                killCharacter(victim.id, '在台灣岸上被王鴻薇推入海');
+        // --- 1. 王鴻薇規則 ---
+        const wangOnTaiwan = taiwanChars.some(c => c.id === 'wanghongwei' && c.isAlive);
+        if (wangOnTaiwan) {
+            // 檢查壓制者是否 "全都不在" 台灣
+            const protectorOnTaiwan = taiwanChars.some(c => WANG_PROTECTORS.includes(c.id) && c.isAlive);
+            if (!protectorOnTaiwan) {
+                // 王鴻薇發動攻擊！
+                // 排除傅崑萁，因為他有自己的規則
+                const maleVictims = taiwanChars.filter(c => MALE_IDS.includes(c.id) && c.isAlive && c.id !== 'fuqunzhu'); 
+                if (maleVictims.length > 0) {
+                    const victim = maleVictims[Math.floor(Math.random() * maleVictims.length)]; // 隨機挑一個
+                    logMessage(`(羅、傅、韓、朱) 都不在台灣，王鴻薇失控，將 ${victim.name} 推入台灣海峽！`);
+                    killCharacter(victim.id, '在台灣岸上被王鴻薇推入海');
+                    // 重新檢查，以防觸發新條件
+                    checkTaiwanBankRules(); 
+                    return; // 結束此次檢查
+                }
+            }
+        }
+
+        // --- 2. 傅崑萁規則 (Bug 2 修正) ---
+        const fuOnTaiwan = taiwanChars.some(c => c.id === 'fuqunzhu' && c.isAlive);
+        if (fuOnTaiwan) {
+            const zhuOnTaiwan = taiwanChars.some(c => c.id === 'zhulilun' && c.isAlive);
+            if (!zhuOnTaiwan) {
+                // 朱立倫不在，傅崑萁危險！
+                const hanOnTaiwan = taiwanChars.some(c => c.id === 'hanguoyu' && c.isAlive);
+                const maOnTaiwan = taiwanChars.some(c => c.id === 'mayingjeou' && c.isAlive);
+
+                if (hanOnTaiwan) {
+                    logMessage('朱立倫不在台灣岸上，韓國瑜把傅崑萁推入海！');
+                    killCharacter('fuqunzhu', '在台灣岸上被韓國瑜推入海');
+                } else if (maOnTaiwan) {
+                    logMessage('朱立倫不在台灣岸上，馬英九把傅崑萁推入海！');
+                    killCharacter('fuqunzhu', '在台灣岸上被馬英九推入海');
+                }
             }
         }
     }
 
     /**
      * 檢查中國岸上的規則 (翁曉玲)
+     * (修正 - 移除 bank 參數)
      */
-    function checkChinaBankRules(bank) {
-        if (bank !== 'china' || gameState.isGameOver) return; // 只有船剛抵達中國時才檢查
-        
+    function checkChinaBankRules() {
+        if (gameState.isGameOver) return; 
+
         const chinaChars = getCharsAtLocation('china');
+        if (chinaChars.length === 0) return; // 中國沒人，不用檢查
+
         const wengOnChina = chinaChars.some(c => c.id === 'wengxiaoling' && c.isAlive);
         if (!wengOnChina) return; // 翁曉玲不在中國，沒事
 
         // 檢查保護者 (傅, 鄭) 是否在場
         const protectorOnChina = chinaChars.some(c => (c.id === 'fuqunzhu' || c.id === 'zhengliwen') && c.isAlive);
+        
         if (!protectorOnChina) {
             logMessage('翁曉玲在中國岸上大喊 "就是比你大"，但 (傅, 鄭) 都不在，她被丟入台灣海峽！');
             killCharacter('wengxiaoling', '在中國岸上被丟入海 (無保護者)');
         }
     }
 
+
     /**
      * 處理沈船事件
      */
     function handleSinking(reason) {
+        if (gameState.isGameOver) return; // 避免重複觸發
         logMessage('船沈了！');
         gameState.isGameOver = true; // 暫停遊戲以處理後果
 
         if (reason === 'fuqunzhu') {
-            logMessage('傅崑萁開船，船沈了！');
+            logMessage('傅崑萁開船，船沈了！他說都是中央的錯！');
             // 船上的人全死
             getCharsOnBoat().forEach(char => {
                 killCharacter(char.id, '搭上傅崑萁開的船而沈船');
             });
 
-            // 解放軍規則
+            // 解放軍規則 (及新規則)
             const chinaPopulation = getCharsAtLocation('china').length;
             if (chinaPopulation < 5) {
                 logMessage(`中國端人數 (${chinaPopulation}) 不足 5 人，解放軍大怒！`);
-                getCharsAtLocation('china').forEach(char => {
-                    killCharacter(char.id, '因沈船且人數不足5人，被解放軍逼跳海');
-                });
+                
+                // *** 修正：必須先複製一份名單，否則邊殺邊檢查會出錯 ***
+                const chinaVictims = [...getCharsAtLocation('china')]; // 複製一份當前在中國的名單
+                
+                if (chinaVictims.length > 0) {
+                    chinaVictims.forEach(char => {
+                        killCharacter(char.id, '因沈船且人數不足5人，被解放軍逼跳海');
+                    });
+                }
+
+                // *** 新規則：檢查中國端是否全滅 ***
+                const livingInChina = getCharsAtLocation('china').length; // 重新獲取 (現在應該是 0)
+                const livingInTaiwan = getCharsAtLocation('taiwan').length;
+
+                if (livingInChina === 0 && livingInTaiwan > 0) {
+                    logMessage('中國端成員全數死亡，台灣端成員被以叛國罪處刑！');
+                    
+                    const taiwanVictims = [...getCharsAtLocation('taiwan')]; // 複製台灣名單
+                    taiwanVictims.forEach(char => {
+                        killCharacter(char.id, '因中國端全滅，被以叛國罪處刑');
+                    });
+                }
             }
         
         } else if (reason === 'zhengliwen') {
@@ -372,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * 檢查遊戲是否結束 (勝利或失敗)
      */
     function checkGameEnd() {
-        if (gameState.isGameOver) return;
+        if (gameState.isGameOver) return; // 避免重複檢查
 
         const livingChars = gameState.characters.filter(c => c.isAlive);
 
@@ -383,12 +433,22 @@ document.addEventListener('DOMContentLoaded', () => {
             gameState.isGameOver = true;
         }
 
-        // 勝利：所有活著的人都在中國
+        // 勝利：所有活著的人都在中國，"並且" 存活數 >= 5
         const allInChina = livingChars.every(c => c.location === 'china');
+        
         if (livingChars.length > 0 && allInChina) {
-            logMessage('--- 遊戲結束 ---');
-            logMessage('全員成功抵達中國投誠！玩家勝利！');
-            gameState.isGameOver = true;
+            if (livingChars.length >= 5) {
+                // 真正的勝利
+                logMessage('--- 遊戲結束 ---');
+                logMessage(`全員 (共 ${livingChars.length} 人) 成功抵達中國投誠！玩家勝利！`);
+                gameState.isGameOver = true;
+            } else {
+                // 慘勝 -> 算失敗
+                logMessage('--- 遊戲結束 ---');
+                logMessage(`雖然倖存者 (${livingChars.length} 人) 都在中國，但人數不足 5 人，投誠失敗。`);
+                logMessage('台灣人民的勝利！');
+                gameState.isGameOver = true;
+            }
         }
         
         if (gameState.isGameOver) {
@@ -404,10 +464,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // 紀錄訊息到日誌
     function logMessage(message) {
         console.log(message); // 在開發者主控台也顯示
-        gameState.gameLog.push(`[${new Date().toLocaleTimeString()}] ${message}`);
+        // 避免在遊戲結束後還瘋狂洗日誌
+        if (gameState && gameState.gameLog.length > 0 && gameState.gameLog[gameState.gameLog.length -1].includes(message)) {
+             return; // 不紀錄重複訊息
+        }
+        
+        const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+        gameState.gameLog.push(`[${timestamp}] ${message}`);
+        
         // 保持日誌最多100條
         if (gameState.gameLog.length > 100) {
             gameState.gameLog.shift();
+        }
+        
+        // 立即渲染日誌
+        if (gameLogUl) {
+            const li = document.createElement('li');
+            li.textContent = `[${timestamp}] ${message}`;
+            gameLogUl.appendChild(li);
+            gameLogUl.scrollTop = gameLogUl.scrollHeight;
         }
     }
 

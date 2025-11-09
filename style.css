@@ -52,14 +52,14 @@ body {
     transition: all 1s ease-in-out; /* 船移動的動畫 */
 }
 
-/* 讓船在右邊 (中國) 時的樣式 */
-.boat.at-china {
-    transform: translateX(200px); /* 簡易的移動效果 */
+/* 讓船在右邊 (台灣) 時的樣式 */
+.boat.at-taiwan {
+    transform: translateX(200px); /* 移到右邊 */
 }
 
-/* 讓船在左邊 (台灣) 時的樣式 */
-.boat.at-taiwan {
-    transform: translateX(-200px); /* 簡易的移動效果 */
+/* 讓船在左邊 (中國) 時的樣式 */
+.boat.at-china {
+    transform: translateX(-200px); /* 移到左邊 */
 }
 
 #move-button {
