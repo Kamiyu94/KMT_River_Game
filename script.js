@@ -422,8 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         
         } else if (reason === 'zhengliwen') {
-            logMessage('鄭麗文太晚到，弄沉了船！');
-            killCharacter('zhengliwen', '因太晚抵達而自沉');
+            logMessage('鄭麗文太晚到，心情不爽，弄沉了船！');
+            killCharacter('zhengliwen', '因太晚抵達而弄沉船');
             // 台灣的人全死
             getCharsAtLocation('taiwan').forEach(char => {
                 killCharacter(char.id, '因鄭麗文沉船，被以叛國罪處刑');
