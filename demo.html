@@ -2,156 +2,176 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KMT River Crossing: 立委過海峽</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>立委過河 V2.0 Mobile</title>
     <style>
-        body {
-            font-family: 'Microsoft JhengHei', sans-serif;
-            background-color: #a2d9ff; /* 海洋色 */
-            margin: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        :root {
+            --bg-sea: #4fc3f7;
+            --land-tw: #4caf50;
+            --land-cn: #e0e0e0;
+            --btn-color: #ff9800;
         }
 
-        /* --- 地圖區域 --- */
-        #game-container {
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-sea);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- 上方遊戲區 (70% 高度) --- */
+        #game-stage {
+            flex: 7;
             position: relative;
-            flex: 1;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            overflow: hidden;
         }
 
+        /* 兩岸土地 */
         .land {
             height: 100%;
-            position: absolute;
-            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 20px;
+            position: relative;
+            width: 25%; /* 手機上土地窄一點，留空間給河 */
         }
 
-        /* 左岸：中國廈門 */
-        #china-coast {
-            left: -50px;
-            width: 300px;
-            background-color: #e0e0e0;
-            clip-path: polygon(0 0, 100% 0, 80% 20%, 90% 40%, 70% 60%, 95% 80%, 85% 100%, 0 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        #land-cn {
+            background-color: var(--land-cn);
+            border-right: 5px solid #aaa;
             color: #555;
-            font-weight: bold;
-            font-size: 2em;
         }
         
-        /* 右岸：台灣 */
-        #taiwan-island {
-            right: 20px;
-            width: 250px;
-            height: 500px;
-            background-color: #4caf50;
-            /* 簡單的台灣形狀 */
-            border-radius: 40% 60% 50% 50% / 60% 50% 50% 40%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        #land-tw {
+            background-color: var(--land-tw);
+            border-left: 5px solid #2e7d32;
             color: white;
-            font-weight: bold;
-            font-size: 2em;
-            transform: rotate(-10deg);
         }
 
-        /* 船 */
+        .land-label {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* 角色停放區 (岸上) */
+        .waiting-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: flex-start;
+            gap: 5px;
+            width: 100%;
+            height: 80%;
+        }
+
+        /* 河流與船 */
+        #river {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
         #boat {
-            width: 160px;
+            width: 140px;
             height: 60px;
-            background: #8B4513;
+            background: #795548;
+            border-radius: 0 0 30px 30px;
             position: absolute;
             bottom: 20%;
-            left: 320px; /* 初始位置在左岸邊 */
-            border-radius: 0 0 20px 20px;
+            /* 船的位置由 JS 控制 left/right % */
+            transition: all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
             display: flex;
             justify-content: space-around;
-            align-items: flex-end;
-            transition: left 1s ease-in-out;
+            align-items: flex-start; /* 角色站在船緣 */
+            padding-top: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             z-index: 10;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            border: 2px solid #3e2723;
         }
-        
+
+        /* 船上的座位標示 */
         #boat::after {
-            content: "點擊開船";
+            content: "載客量: 2";
             position: absolute;
-            bottom: -25px;
-            width: 100%;
-            text-align: center;
-            font-size: 12px;
-            color: white;
+            bottom: 2px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
         }
 
         /* --- 角色樣式 --- */
-        .character {
-            width: 60px;
-            height: 60px;
+        .char {
+            width: 45px; /* 手機版稍微縮小 */
+            height: 45px;
             border-radius: 50%;
-            background-color: white;
-            border: 3px solid #333;
+            background: white;
+            border: 2px solid #333;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 12px;
+            font-size: 24px;
             cursor: pointer;
-            position: relative; /* 為了對話框定位 */
-            transition: transform 0.2s;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            margin: 5px;
+            position: relative;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
             z-index: 20;
         }
-
-        .character:hover {
-            transform: scale(1.1);
-        }
-
-        .character img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        /* 角色位置容器 */
-        .location-slot {
-            display: flex;
-            flex-wrap: wrap;
-            width: 150px;
-            justify-content: center;
-            z-index: 20;
-        }
-
-        #left-bank-slots { position: absolute; left: 50px; top: 40%; }
-        #right-bank-slots { position: absolute; right: 80px; top: 40%; }
         
-        /* --- 對話泡泡 --- */
+        .char:active { transform: scale(0.9); }
+
+        /* 角色標籤 (名字) */
+        .char-name {
+            position: absolute;
+            bottom: -16px;
+            font-size: 10px;
+            background: rgba(255,255,255,0.8);
+            padding: 1px 3px;
+            border-radius: 4px;
+            white-space: nowrap;
+            font-weight: bold;
+            color: black;
+        }
+
+        /* 對話泡泡 - 漫畫風格 */
         .bubble {
             position: absolute;
-            bottom: 70px;
+            top: -50px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) scale(0);
             background: #fff;
-            padding: 8px 12px;
-            border-radius: 10px;
+            padding: 6px 10px;
+            border-radius: 12px;
             border: 2px solid #000;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
+            color: #000;
             white-space: nowrap;
-            z-index: 100;
             opacity: 0;
+            transition: all 0.3s;
             pointer-events: none;
-            transition: opacity 0.3s;
+            z-index: 100; /* 確保最上層 */
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+        }
+
+        .bubble.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
         }
         
+        /* 泡泡的小尾巴 */
         .bubble::after {
             content: '';
             position: absolute;
@@ -163,230 +183,243 @@
             border-color: #000 transparent transparent transparent;
         }
 
-        .bubble.show {
-            opacity: 1;
-            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes pop {
-            0% { transform: translateX(-50%) scale(0.5); }
-            100% { transform: translateX(-50%) scale(1); }
-        }
-
-        /* --- 遊戲日誌與控制 --- */
-        #ui-panel {
-            height: 200px;
-            background: #f4f4f4;
-            border-top: 2px solid #333;
-            padding: 10px;
-            display: flex;
-            gap: 20px;
-        }
-
-        #game-log {
-            flex: 2;
+        /* --- 下方控制區 (30% 高度) --- */
+        #control-panel {
+            flex: 3;
             background: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            overflow-y: auto;
-            font-family: monospace;
-        }
-        
-        #game-log p { margin: 5px 0; border-bottom: 1px dashed #eee; }
-
-        #controls {
-            flex: 1;
+            border-top: 4px solid #333;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
-        button {
-            padding: 10px 20px;
-            font-size: 18px;
-            cursor: pointer;
-            background: #ff5722;
-            color: white;
-            border: none;
+        #log-box {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+            padding: 5px;
+            font-size: 12px;
+            margin-bottom: 10px;
             border-radius: 5px;
         }
+        
+        #log-box p { margin: 3px 0; border-bottom: 1px dashed #eee; color: #333; }
 
-        /* 角色特定樣式 (示範用顏色區分，您可以換圖) */
-        .char-fu { border-color: blue; } /* 傅 */
-        .char-hsu { border-color: red; } /* 徐 */
-        .char-lo { border-color: orange; } /* 羅 */
+        /* 巨大的操作按鈕 */
+        #action-area {
+            display: flex;
+            gap: 10px;
+            height: 60px;
+        }
+
+        .btn-big {
+            flex: 1;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        
+        .btn-big:active { box-shadow: 0 2px 0 rgba(0,0,0,0.2); transform: translateY(2px); }
+
+        #btn-move { background-color: #d32f2f; font-size: 22px; } /* 紅色開船鈕 */
+        #btn-reset { background-color: #607d8b; flex: 0.3; font-size: 14px; }
 
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <div id="china-coast" class="land">廈門<br><span style="font-size:0.5em">China</span></div>
-        <div id="taiwan-island" class="land">台灣<br><span style="font-size:0.5em">Taiwan</span></div>
+    <div id="game-stage">
+        <div id="land-cn" class="land">
+            <div class="land-label">中國<br><small style="font-size:10px">China</small></div>
+            <div id="slots-left" class="waiting-area"></div>
+        </div>
 
-        <div id="left-bank-slots" class="location-slot"></div>
-        
-        <div id="boat" onclick="moveBoat()"></div>
+        <div id="river">
+            <div id="boat"></div>
+        </div>
 
-        <div id="right-bank-slots" class="location-slot"></div>
+        <div id="land-tw" class="land">
+            <div class="land-label">台灣<br><small style="font-size:10px">Taiwan</small></div>
+            <div id="slots-right" class="waiting-area"></div>
+        </div>
     </div>
 
-    <div id="ui-panel">
-        <div id="game-log">
-            <p><strong>系統:</strong> 遊戲開始！所有立委都在廈門準備回台灣開會。</p>
-            <p><strong>任務:</strong> 把所有藍營大咖運回台灣。</p>
+    <div id="control-panel">
+        <div id="log-box">
+            <p>系統: 遊戲開始！所有人都在台灣。</p>
+            <p>系統: 請點擊立委上下船。</p>
         </div>
-        <div id="controls">
-            <button onclick="resetGame()">重置遊戲</button>
-            <div style="margin-top:10px; font-size:12px; color:#666;">點擊立委上下船<br>點擊船身開船</div>
+        <div id="action-area">
+            <button id="btn-reset" onclick="resetGame()">重置</button>
+            <button id="btn-move" onclick="moveBoat()">🚢 開船 (Go)</button>
         </div>
     </div>
 
 <script>
-    // --- 遊戲設定 ---
-    // 您可以在這裡把 'emoji' 換成 '<img src="您的圖片網址.jpg">'
+    // --- 1. 角色設定 (全部放回來) ---
+    // 您可以把 'emoji' 換成圖片路徑 '<img src="xx.png" style="width:100%;height:100%;border-radius:50%">'
     const characters = [
-        { id: 'fu', name: '傅崑萁', emoji: '👑', class: 'char-fu', quote: '都是中央的錯！', loc: 'left' },
-        { id: 'hsu', name: '徐巧芯', emoji: '🐝', class: 'char-hsu', quote: '密錄器拿出來！', loc: 'left' },
-        { id: 'lo', name: '羅智強', emoji: '🎤', class: 'char-lo', quote: '要買新書嗎？', loc: 'left' },
-        // 可以在這裡繼續增加角色，例如民進黨立委或物品
+        // 藍營 (Blue Team)
+        { id: 'fu', name: '傅崑萁', emoji: '👑', quote: '花蓮王駕到！', team: 'blue' },
+        { id: 'hsu', name: '徐巧芯', emoji: '🐝', quote: '我的密錄器呢？', team: 'blue' },
+        { id: 'lo', name: '羅智強', emoji: '🎤', quote: '這是政治迫害！', team: 'blue' },
+        // 綠營/對手 (Green Team) - 補足人數以符合邏輯
+        { id: 'ker', name: '柯總召', emoji: '👓', quote: '太離譜了！', team: 'green' },
+        { id: 'huang', name: '黃國昌', emoji: '咆', quote: '太離譜了！', team: 'yellow' }, // 這裡設為黃色力量
+        { id: 'han', name: '韓國瑜', emoji: '🐟', quote: '發大財！', team: 'blue' }
     ];
 
-    let boatLocation = 'left'; // 'left' or 'right'
-    let boatPassengers = [];
-    
-    const boatCapacity = 2;
+    // 遊戲狀態
+    let boatPos = 'right'; // 船一開始在右邊 (台灣)
+    let passengers = [];   // 船上的乘客ID
+    let charLocations = {}; // 每個角色的位置: 'left', 'right', 'boat'
 
-    // --- 初始化 DOM ---
-    function initGame() {
-        renderCharacters();
-        updateBoatPosition();
-        log("遊戲已載入，請點擊立委上下船。");
+    // 初始化
+    function init() {
+        passengers = [];
+        // 2. 設定起點全部在台灣 (right)
+        characters.forEach(c => {
+            charLocations[c.id] = 'right'; 
+        });
+        boatPos = 'right';
+        render();
+        log("準備完成，目標是前往對岸。");
     }
 
-    function renderCharacters() {
-        // 清空所有容器
-        document.getElementById('left-bank-slots').innerHTML = '';
-        document.getElementById('right-bank-slots').innerHTML = '';
-        const boatEl = document.getElementById('boat');
-        // 保留船的 onclick，清空內容
-        boatEl.innerHTML = ''; 
+    // 渲染畫面
+    function render() {
+        const leftSlots = document.getElementById('slots-left');
+        const rightSlots = document.getElementById('slots-right');
+        const boatSlots = document.getElementById('boat');
 
-        characters.forEach(char => {
+        leftSlots.innerHTML = '';
+        rightSlots.innerHTML = '';
+        boatSlots.innerHTML = ''; // 清空船
+
+        // 更新船的位置 (CSS)
+        // 手機版邏輯：用 left % 來控制
+        if (boatPos === 'left') {
+            boatSlots.style.left = '5%'; 
+            boatSlots.style.right = 'auto';
+        } else {
+            boatSlots.style.left = 'auto';
+            boatSlots.style.right = '5%';
+        }
+
+        characters.forEach(c => {
             const el = document.createElement('div');
-            el.className = `character ${char.class}`;
-            // 如果您有圖片，這裡可以用 innerHTML = `<img src="...">`
+            el.className = 'char';
+            // 根據陣營給一點外框顏色區分
+            el.style.borderColor = c.team === 'blue' ? '#0000ff' : (c.team === 'green' ? '#00ff00' : '#e6e600');
+            
             el.innerHTML = `
-                ${char.emoji}
-                <div style="font-size:10px">${char.name}</div>
-                <div class="bubble" id="bubble-${char.id}">${char.quote}</div>
+                ${c.emoji}
+                <span class="char-name">${c.name}</span>
+                <div id="bubble-${c.id}" class="bubble">${c.quote}</div>
             `;
-            el.onclick = (e) => { 
-                e.stopPropagation(); // 防止觸發船的點擊
-                togglePassenger(char); 
-            };
+            
+            el.onclick = () => clickCharacter(c);
 
-            if (boatPassengers.includes(char.id)) {
-                boatEl.appendChild(el);
-            } else if (char.loc === 'left') {
-                document.getElementById('left-bank-slots').appendChild(el);
+            // 放置角色
+            if (passengers.includes(c.id)) {
+                boatSlots.appendChild(el);
             } else {
-                document.getElementById('right-bank-slots').appendChild(el);
+                if (charLocations[c.id] === 'left') leftSlots.appendChild(el);
+                else rightSlots.appendChild(el);
             }
         });
     }
 
-    // --- 遊戲邏輯 ---
+    // 點擊角色邏輯
+    function clickCharacter(c) {
+        // 觸發對話泡泡 (4. 對話泡泡修復)
+        showBubble(c.id);
 
-    // 上下船邏輯
-    function togglePassenger(char) {
-        // 如果船不在角色所在的那一邊，不能上船
-        if (!boatPassengers.includes(char.id) && char.loc !== boatLocation) {
-            showBubble(char.id, "船不在這邊！");
-            return;
-        }
-
-        if (boatPassengers.includes(char.id)) {
-            // 下船：回到當前船所在的岸邊
-            boatPassengers = boatPassengers.filter(id => id !== char.id);
-            char.loc = boatLocation;
-            log(`${char.name} 下船到了 ${boatLocation === 'left' ? '廈門' : '台灣'}。`);
+        // 判斷是否在船上
+        if (passengers.includes(c.id)) {
+            // 下船：必須下到船目前所在的岸邊
+            passengers = passengers.filter(pid => pid !== c.id);
+            charLocations[c.id] = boatPos;
+            log(`${c.name} 下船到了 ${boatPos==='left'?'中國':'台灣'}`);
         } else {
-            // 上船
-            if (boatPassengers.length >= boatCapacity) {
-                log("船滿了！不能再上了。");
-                return; // 船滿了
+            // 上船：
+            // 1. 角色必須跟船在同一邊
+            if (charLocations[c.id] !== boatPos) {
+                log(`❌ 船在對面，${c.name} 過不來！`);
+                return;
             }
-            boatPassengers.push(char.id);
-            // 隨機觸發對話
-            if(Math.random() > 0.3) showBubble(char.id, char.quote);
-            log(`${char.name} 上船了。`);
+            // 2. 船不能滿 (上限2人)
+            if (passengers.length >= 2) {
+                log("❌ 船滿了 (上限2人)！");
+                return;
+            }
+            passengers.push(c.id);
+            log(`${c.name} 上船了`);
         }
-        renderCharacters();
+        render();
     }
 
-    // 開船邏輯
+    // 開船
     function moveBoat() {
-        if (boatPassengers.length === 0) {
-            log("空船不能開！");
+        // 3. 開船按鈕檢查
+        if (passengers.length === 0) {
+            log("❌ 這是空船，不能開鬼船！");
+            alert("請先讓立委上船！");
             return;
         }
 
-        // 可以在這裡加入「誰不能跟誰在一起」的邏輯檢查
-        // checkRules(); 
-
-        // 移動
-        boatLocation = boatLocation === 'left' ? 'right' : 'left';
-        updateBoatPosition();
-        log(`船開往 ${boatLocation === 'left' ? '廈門' : '台灣'}...`);
-
-        // 到達後更新所有乘客的位置標記（雖然他們還在船上，但概念上船的位置變了）
-        // 注意：這裡不需要改 char.loc，因為 char.loc 是指「在岸上時」的位置
-        // 只有下船時才更新 char.loc
+        // 這裡可以加入邏輯檢查 (例如：如果岸上藍綠比例不對，某人被打死)
+        // 暫時先只做移動功能
+        
+        log("🌊 船正在渡河...");
+        
+        // 切換位置
+        boatPos = (boatPos === 'left') ? 'right' : 'left';
+        
+        render(); // 更新畫面讓船動起來
+        
+        setTimeout(() => {
+            log(`✅ 抵達 ${boatPos==='left'?'中國':'台灣'}`);
+        }, 800);
     }
 
-    function updateBoatPosition() {
-        const boat = document.getElementById('boat');
-        if (boatLocation === 'left') {
-            boat.style.left = '320px'; 
-        } else {
-            // 根據螢幕寬度動態調整，這裡簡單寫死，建議用 calc
-            boat.style.left = 'calc(100% - 350px)'; 
-        }
-    }
-
-    // --- 視覺效果功能 ---
-
-    function showBubble(charId, text) {
-        const bubble = document.getElementById(`bubble-${charId}`);
-        if(bubble) {
-            bubble.innerText = text; // 更新文字
-            bubble.classList.add('show');
+    // 顯示泡泡
+    function showBubble(id) {
+        const b = document.getElementById(`bubble-${id}`);
+        if (b) {
+            b.classList.add('show');
+            // 隨機換句話 (進階功能，這裡先用預設)
             setTimeout(() => {
-                bubble.classList.remove('show');
-            }, 2000); // 2秒後消失
+                b.classList.remove('show');
+            }, 2000);
         }
     }
 
+    // 記錄文字
     function log(msg) {
-        const logBox = document.getElementById('game-log');
+        const box = document.getElementById('log-box');
         const p = document.createElement('p');
-        p.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logBox.prepend(p);
+        p.textContent = msg;
+        box.prepend(p); // 新訊息在最上面
     }
 
     function resetGame() {
-        boatLocation = 'left';
-        boatPassengers = [];
-        characters.forEach(c => c.loc = 'left');
-        document.getElementById('game-log').innerHTML = '';
-        log("遊戲已重置。");
-        initGame();
+        if(confirm("確定要重置遊戲嗎？")) {
+            init();
+        }
     }
 
     // 啟動
-    initGame();
+    init();
 
 </script>
 </body>
