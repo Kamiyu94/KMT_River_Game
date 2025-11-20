@@ -3,424 +3,736 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>立委過河 V2.0 Mobile</title>
+    <title>國民黨立委過河 V3.0</title>
     <style>
+        /* --- CSS 樣式開始 --- */
         :root {
-            --bg-sea: #4fc3f7;
-            --land-tw: #4caf50;
-            --land-cn: #e0e0e0;
-            --btn-color: #ff9800;
+            --sea-color: #80deea;
+            --taiwan-green: #66bb6a;
+            --china-gray: #bdbdbd;
+            --boat-brown: #795548;
+            --ui-bg: rgba(255, 255, 255, 0.95);
         }
 
         body {
             margin: 0;
-            padding: 0;
-            font-family: "Microsoft JhengHei", sans-serif;
-            background-color: var(--bg-sea);
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background-color: var(--sea-color);
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: hidden; /* 防止捲動 */
         }
 
-        /* --- 上方遊戲區 (70% 高度) --- */
-        #game-stage {
-            flex: 7;
+        /* 遊戲主舞台 */
+        #stage {
+            flex: 1;
             position: relative;
             width: 100%;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            overflow: hidden;
         }
 
-        /* 兩岸土地 */
-        .land {
+        /* 背景地圖 (SVG) */
+        .map-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
+            z-index: 1;
+            pointer-events: none; /* 讓點擊穿透到下方 */
+        }
+
+        /* 左岸 (中國) */
+        #area-china {
+            position: relative;
+            width: 25%;
+            height: 100%;
+            z-index: 10;
+            padding-top: 60px; /* 避開文字 */
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding-top: 20px;
+        }
+
+        /* 右岸 (台灣) */
+        #area-taiwan {
             position: relative;
-            width: 25%; /* 手機上土地窄一點，留空間給河 */
+            width: 25%;
+            height: 100%;
+            z-index: 10;
+            padding-top: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        #land-cn {
-            background-color: var(--land-cn);
-            border-right: 5px solid #aaa;
-            color: #555;
-        }
-        
-        #land-tw {
-            background-color: var(--land-tw);
-            border-left: 5px solid #2e7d32;
-            color: white;
-        }
-
-        .land-label {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        /* 角色停放區 (岸上) */
-        .waiting-area {
+        /* 角色容器 */
+        .char-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            align-content: flex-start;
-            gap: 5px;
+            gap: 8px;
             width: 100%;
-            height: 80%;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
-        /* 河流與船 */
-        #river {
+        /* 河道與船 */
+        #area-river {
             flex: 1;
-            height: 100%;
             position: relative;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
+            z-index: 20;
         }
 
         #boat {
-            width: 140px;
-            height: 60px;
-            background: #795548;
-            border-radius: 0 0 30px 30px;
+            width: 160px;
+            height: 70px;
+            background-color: var(--boat-brown);
+            border-radius: 0 0 40px 40px;
+            border-top: 5px solid #5d4037;
             position: absolute;
             bottom: 20%;
-            /* 船的位置由 JS 控制 left/right % */
-            transition: all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
-            display: flex;
-            justify-content: space-around;
-            align-items: flex-start; /* 角色站在船緣 */
-            padding-top: 5px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            z-index: 10;
-            border: 2px solid #3e2723;
-        }
-
-        /* 船上的座位標示 */
-        #boat::after {
-            content: "載客量: 2";
-            position: absolute;
-            bottom: 2px;
-            font-size: 10px;
-            color: rgba(255,255,255,0.6);
-        }
-
-        /* --- 角色樣式 --- */
-        .char {
-            width: 45px; /* 手機版稍微縮小 */
-            height: 45px;
-            border-radius: 50%;
-            background: white;
-            border: 2px solid #333;
+            /* 透過 JS 控制 left */
+            left: calc(100% - 200px); 
+            transition: left 1.5s cubic-bezier(0.45, 0.05, 0.55, 0.95);
             display: flex;
             justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            cursor: pointer;
-            position: relative;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            transition: transform 0.1s;
-            z-index: 20;
+            align-items: flex-start; /* 角色站在船緣 */
+            gap: 5px;
+            padding-top: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        #boat::after {
+            content: "乘載: 2人";
+            position: absolute;
+            bottom: 5px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
         }
         
-        .char:active { transform: scale(0.9); }
-
-        /* 角色標籤 (名字) */
-        .char-name {
+        /* 船上有裝飾用的旗幟 */
+        .flag {
             position: absolute;
-            bottom: -16px;
-            font-size: 10px;
-            background: rgba(255,255,255,0.8);
-            padding: 1px 3px;
-            border-radius: 4px;
-            white-space: nowrap;
-            font-weight: bold;
-            color: black;
+            top: -25px;
+            right: 10px;
+            width: 2px;
+            height: 25px;
+            background: #333;
+        }
+        .flag::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 15px;
+            background: red;
+            clip-path: polygon(0 0, 100% 50%, 0 100%);
         }
 
-        /* 對話泡泡 - 漫畫風格 */
+        /* 角色卡片 */
+        .char {
+            width: 55px;
+            height: 55px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            user-select: none;
+        }
+
+        .char:active { transform: scale(0.9); }
+
+        /* 陳玉珍特殊樣式 */
+        .char[data-id="chenyuzhen"] {
+            border: 4px solid #ff9800;
+            width: 60px;
+            height: 60px;
+        }
+
+        .char-img { font-size: 24px; }
+        .char-info { 
+            font-size: 9px; 
+            background: rgba(0,0,0,0.1); 
+            padding: 0 4px; 
+            border-radius: 4px;
+            margin-top: 2px;
+        }
+
+        /* 對話泡泡 */
         .bubble {
             position: absolute;
-            top: -50px;
+            bottom: 65px; /* 在角色頭上 */
             left: 50%;
             transform: translateX(-50%) scale(0);
             background: #fff;
-            padding: 6px 10px;
-            border-radius: 12px;
             border: 2px solid #000;
+            padding: 5px 10px;
+            border-radius: 10px;
             font-size: 12px;
-            font-weight: bold;
-            color: #000;
             white-space: nowrap;
+            z-index: 100;
             opacity: 0;
-            transition: all 0.3s;
+            transition: all 0.3s ease-out;
             pointer-events: none;
-            z-index: 100; /* 確保最上層 */
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
         }
 
         .bubble.show {
-            opacity: 1;
             transform: translateX(-50%) scale(1);
+            opacity: 1;
         }
-        
-        /* 泡泡的小尾巴 */
+
         .bubble::after {
             content: '';
             position: absolute;
             bottom: -6px;
             left: 50%;
-            transform: translateX(-50%);
+            margin-left: -6px;
             border-width: 6px 6px 0;
             border-style: solid;
             border-color: #000 transparent transparent transparent;
         }
 
-        /* --- 下方控制區 (30% 高度) --- */
-        #control-panel {
-            flex: 3;
-            background: #fff;
-            border-top: 4px solid #333;
+        /* 狀態面板 (Log & Controls) */
+        #dashboard {
+            height: 220px;
+            background: var(--ui-bg);
+            border-top: 3px solid #333;
             display: flex;
             flex-direction: column;
             padding: 10px;
             box-sizing: border-box;
+            z-index: 50;
         }
 
-        #log-box {
+        #info-panel {
             flex: 1;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            background: #f9f9f9;
-            padding: 5px;
-            font-size: 12px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
-        
-        #log-box p { margin: 3px 0; border-bottom: 1px dashed #eee; color: #333; }
-
-        /* 巨大的操作按鈕 */
-        #action-area {
             display: flex;
             gap: 10px;
-            height: 60px;
+            overflow: hidden;
+            margin-bottom: 10px;
         }
 
-        .btn-big {
+        #log-box, #death-box {
+            flex: 1;
+            border: 1px solid #ccc;
+            background: #fff;
+            padding: 5px;
+            overflow-y: auto;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        
+        #log-box h4, #death-box h4 { margin: 0 0 5px 0; text-align: center; background: #eee; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { border-bottom: 1px dashed #eee; padding: 2px 0; }
+        
+        .log-time { color: #888; font-size: 10px; margin-right: 4px; }
+
+        #controls {
+            height: 50px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
             flex: 1;
             border: none;
-            border-radius: 10px;
-            font-size: 18px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: bold;
             color: white;
             cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             box-shadow: 0 4px 0 rgba(0,0,0,0.2);
         }
+
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
         
-        .btn-big:active { box-shadow: 0 2px 0 rgba(0,0,0,0.2); transform: translateY(2px); }
+        #btn-move { background: #e53935; flex: 2; font-size: 20px; }
+        #btn-reset { background: #607d8b; }
 
-        #btn-move { background-color: #d32f2f; font-size: 22px; } /* 紅色開船鈕 */
-        #btn-reset { background-color: #607d8b; flex: 0.3; font-size: 14px; }
+        /* 地名標籤 */
+        .label-geo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
 
+        /* 手機適配微調 */
+        @media (max-width: 600px) {
+            #boat { width: 130px; height: 60px; }
+            .char { width: 45px; height: 45px; }
+            .char-img { font-size: 20px; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="game-stage">
-        <div id="land-cn" class="land">
-            <div class="land-label">中國<br><small style="font-size:10px">China</small></div>
-            <div id="slots-left" class="waiting-area"></div>
+    <div id="stage">
+        <svg class="map-layer" viewBox="0 0 800 600" preserveAspectRatio="none">
+            <path d="M-50,0 L200,0 L180,100 L220,200 L150,300 L200,400 L160,600 L-50,600 Z" fill="#e0e0e0" stroke="#9e9e9e" stroke-width="2"/>
+            
+            <path d="M650,50 Q700,20 750,80 Q820,200 780,350 Q750,500 700,550 Q600,450 620,300 Q630,150 650,50 Z" fill="#66bb6a" stroke="#2e7d32" stroke-width="2"/>
+        </svg>
+
+        <div id="area-china">
+            <div class="label-geo" style="color:#555">中國<br><span style="font-size:12px">China</span></div>
+            <div id="chars-china" class="char-container"></div>
         </div>
 
-        <div id="river">
-            <div id="boat"></div>
+        <div id="area-river">
+            <div id="boat">
+                <div class="flag"></div>
+                </div>
         </div>
 
-        <div id="land-tw" class="land">
-            <div class="land-label">台灣<br><small style="font-size:10px">Taiwan</small></div>
-            <div id="slots-right" class="waiting-area"></div>
-        </div>
-    </div>
-
-    <div id="control-panel">
-        <div id="log-box">
-            <p>系統: 遊戲開始！所有人都在台灣。</p>
-            <p>系統: 請點擊立委上下船。</p>
-        </div>
-        <div id="action-area">
-            <button id="btn-reset" onclick="resetGame()">重置</button>
-            <button id="btn-move" onclick="moveBoat()">🚢 開船 (Go)</button>
+        <div id="area-taiwan">
+            <div class="label-geo">台灣<br><span style="font-size:12px">Taiwan</span></div>
+            <div id="chars-taiwan" class="char-container"></div>
         </div>
     </div>
 
-<script>
-    // --- 1. 角色設定 (全部放回來) ---
-    // 您可以把 'emoji' 換成圖片路徑 '<img src="xx.png" style="width:100%;height:100%;border-radius:50%">'
-    const characters = [
-        // 藍營 (Blue Team)
-        { id: 'fu', name: '傅崑萁', emoji: '👑', quote: '花蓮王駕到！', team: 'blue' },
-        { id: 'hsu', name: '徐巧芯', emoji: '🐝', quote: '我的密錄器呢？', team: 'blue' },
-        { id: 'lo', name: '羅智強', emoji: '🎤', quote: '這是政治迫害！', team: 'blue' },
-        // 綠營/對手 (Green Team) - 補足人數以符合邏輯
-        { id: 'ker', name: '柯總召', emoji: '👓', quote: '太離譜了！', team: 'green' },
-        { id: 'huang', name: '黃國昌', emoji: '咆', quote: '太離譜了！', team: 'yellow' }, // 這裡設為黃色力量
-        { id: 'han', name: '韓國瑜', emoji: '🐟', quote: '發大財！', team: 'blue' }
-    ];
+    <div id="dashboard">
+        <div id="info-panel">
+            <div id="death-box">
+                <h4>💀 死亡名單</h4>
+                <ul id="list-dead"></ul>
+            </div>
+            <div id="log-box">
+                <h4>📜 遊戲日誌</h4>
+                <ul id="list-log"></ul>
+            </div>
+        </div>
+        <div id="controls">
+            <button id="btn-reset" onclick="initGame()">重置</button>
+            <button id="btn-move" onclick="moveBoat()">🚢 開船 (GO)</button>
+        </div>
+    </div>
 
-    // 遊戲狀態
-    let boatPos = 'right'; // 船一開始在右邊 (台灣)
-    let passengers = [];   // 船上的乘客ID
-    let charLocations = {}; // 每個角色的位置: 'left', 'right', 'boat'
+    <script>
+        // --- 遊戲邏輯 (Script) ---
 
-    // 初始化
-    function init() {
-        passengers = [];
-        // 2. 設定起點全部在台灣 (right)
-        characters.forEach(c => {
-            charLocations[c.id] = 'right'; 
-        });
-        boatPos = 'right';
-        render();
-        log("準備完成，目標是前往對岸。");
-    }
+        // 1. 角色與參數設定
+        // 您可以自由更換 Emoji 或將來替換成 <img>
+        const INITIAL_CHARS = [
+            { id: 'hanguoyu', name: '韓國瑜', emoji: '🐟', money: 200, canDrive: true, size: 1 },
+            { id: 'fuqunzhu', name: '傅崑萁', emoji: '👑', money: 500, canDrive: false, size: 1 },
+            { id: 'zhulilun', name: '朱立倫', emoji: '🤓', money: 200, canDrive: true, size: 1 },
+            { id: 'xuxiaoqin', name: '徐巧芯', emoji: '🐝', money: 200, canDrive: false, size: 1 },
+            { id: 'zhengliwen', name: '鄭麗文', emoji: '👠', money: 200, canDrive: true, size: 1 },
+            { id: 'wanghongwei', name: '王鴻薇', emoji: '💣', money: 200, canDrive: false, size: 1 },
+            { id: 'luozhiqiang', name: '羅智強', emoji: '📖', money: 100, canDrive: true, size: 1 }, // 金額修正為 100
+            { id: 'chenyuzhen', name: '陳玉珍', emoji: '🛡️', money: 200, canDrive: true, size: 2 },
+            { id: 'yeyuanzhi', name: '葉元之', emoji: '😨', money: 200, canDrive: false, size: 1 },
+            { id: 'wengxiaoling', name: '翁曉玲', emoji: '⚖️', money: 200, canDrive: false, size: 1 },
+            { id: 'mayingjeou', name: '馬英九', emoji: '🐴', money: 200, canDrive: true, size: 1 }
+        ];
 
-    // 渲染畫面
-    function render() {
-        const leftSlots = document.getElementById('slots-left');
-        const rightSlots = document.getElementById('slots-right');
-        const boatSlots = document.getElementById('boat');
+        const MALE_IDS = ['hanguoyu', 'fuqunzhu', 'luozhiqiang', 'yeyuanzhi', 'mayingjeou', 'zhulilun'];
+        const WANG_PROTECTORS = ['luozhiqiang', 'fuqunzhu', 'hanguoyu', 'zhulilun'];
 
-        leftSlots.innerHTML = '';
-        rightSlots.innerHTML = '';
-        boatSlots.innerHTML = ''; // 清空船
+        // 狀態變數
+        let chars = []; // 執行期角色資料
+        let boatLoc = 'taiwan'; // 'taiwan' | 'china'
+        let chinaArrivals = []; // 抵達順序
+        let isGameOver = false;
 
-        // 更新船的位置 (CSS)
-        // 手機版邏輯：用 left % 來控制
-        if (boatPos === 'left') {
-            boatSlots.style.left = '5%'; 
-            boatSlots.style.right = 'auto';
-        } else {
-            boatSlots.style.left = 'auto';
-            boatSlots.style.right = '5%';
+        // DOM 元素
+        const elStage = document.getElementById('stage');
+        const elBoat = document.getElementById('boat');
+        const elChina = document.getElementById('chars-china');
+        const elTaiwan = document.getElementById('chars-taiwan');
+        const elDeadList = document.getElementById('list-dead');
+        const elLogList = document.getElementById('list-log');
+        const btnMove = document.getElementById('btn-move');
+
+        // --- 初始化 ---
+        function initGame() {
+            // 深拷貝初始資料
+            chars = JSON.parse(JSON.stringify(INITIAL_CHARS));
+            chars.forEach(c => {
+                c.location = 'taiwan'; // 初始全在台灣
+                c.isAlive = true;
+            });
+
+            boatLoc = 'taiwan';
+            chinaArrivals = [];
+            isGameOver = false;
+
+            // 清空 UI
+            elDeadList.innerHTML = '';
+            elLogList.innerHTML = '';
+            btnMove.disabled = false;
+            btnMove.style.background = '#e53935';
+            btnMove.textContent = '🚢 開船 (GO)';
+
+            log('遊戲開始！目標：將立委運往中國。');
+            render();
         }
 
-        characters.forEach(c => {
-            const el = document.createElement('div');
-            el.className = 'char';
-            // 根據陣營給一點外框顏色區分
-            el.style.borderColor = c.team === 'blue' ? '#0000ff' : (c.team === 'green' ? '#00ff00' : '#e6e600');
-            
-            el.innerHTML = `
-                ${c.emoji}
-                <span class="char-name">${c.name}</span>
-                <div id="bubble-${c.id}" class="bubble">${c.quote}</div>
-            `;
-            
-            el.onclick = () => clickCharacter(c);
+        // --- 渲染畫面 (Render) ---
+        function render() {
+            // 清空舊元素
+            [elChina, elTaiwan].forEach(el => el.innerHTML = '');
+            // 保留船的結構，只清空角色 (除了 flag)
+            const children = Array.from(elBoat.children);
+            children.forEach(child => {
+                if(!child.classList.contains('flag')) elBoat.removeChild(child);
+            });
 
-            // 放置角色
-            if (passengers.includes(c.id)) {
-                boatSlots.appendChild(el);
+            // 1. 設定船位置 (CSS Transition)
+            if (boatLoc === 'taiwan') {
+                elBoat.style.left = 'calc(100% - 200px)'; // 靠右
             } else {
-                if (charLocations[c.id] === 'left') leftSlots.appendChild(el);
-                else rightSlots.appendChild(el);
+                elBoat.style.left = '40px'; // 靠左
             }
-        });
-    }
 
-    // 點擊角色邏輯
-    function clickCharacter(c) {
-        // 觸發對話泡泡 (4. 對話泡泡修復)
-        showBubble(c.id);
+            // 2. 繪製角色
+            chars.forEach(c => {
+                if (!c.isAlive) return;
 
-        // 判斷是否在船上
-        if (passengers.includes(c.id)) {
-            // 下船：必須下到船目前所在的岸邊
-            passengers = passengers.filter(pid => pid !== c.id);
-            charLocations[c.id] = boatPos;
-            log(`${c.name} 下船到了 ${boatPos==='left'?'中國':'台灣'}`);
-        } else {
-            // 上船：
-            // 1. 角色必須跟船在同一邊
-            if (charLocations[c.id] !== boatPos) {
-                log(`❌ 船在對面，${c.name} 過不來！`);
-                return;
-            }
-            // 2. 船不能滿 (上限2人)
-            if (passengers.length >= 2) {
-                log("❌ 船滿了 (上限2人)！");
-                return;
-            }
-            passengers.push(c.id);
-            log(`${c.name} 上船了`);
-        }
-        render();
-    }
+                const div = document.createElement('div');
+                div.className = 'char';
+                div.dataset.id = c.id;
+                div.onclick = (e) => { e.stopPropagation(); clickChar(c.id); };
+                
+                div.innerHTML = `
+                    <div class="char-img">${c.emoji}</div>
+                    <div class="char-info">${c.name}</div>
+                    <div class="char-info" style="color:green">$${c.money}</div>
+                    <div class="bubble" id="bubble-${c.id}"></div>
+                `;
 
-    // 開船
-    function moveBoat() {
-        // 3. 開船按鈕檢查
-        if (passengers.length === 0) {
-            log("❌ 這是空船，不能開鬼船！");
-            alert("請先讓立委上船！");
-            return;
+                // 放置位置
+                if (c.location === 'taiwan') elTaiwan.appendChild(div);
+                else if (c.location === 'china') elChina.appendChild(div);
+                else if (c.location === 'boat') elBoat.appendChild(div);
+            });
         }
 
-        // 這裡可以加入邏輯檢查 (例如：如果岸上藍綠比例不對，某人被打死)
-        // 暫時先只做移動功能
-        
-        log("🌊 船正在渡河...");
-        
-        // 切換位置
-        boatPos = (boatPos === 'left') ? 'right' : 'left';
-        
-        render(); // 更新畫面讓船動起來
-        
-        setTimeout(() => {
-            log(`✅ 抵達 ${boatPos==='left'?'中國':'台灣'}`);
-        }, 800);
-    }
+        // --- 互動邏輯 ---
+        function clickChar(id) {
+            if (isGameOver) return;
 
-    // 顯示泡泡
-    function showBubble(id) {
-        const b = document.getElementById(`bubble-${id}`);
-        if (b) {
-            b.classList.add('show');
-            // 隨機換句話 (進階功能，這裡先用預設)
+            const c = chars.find(x => x.id === id);
+            
+            // 上下船邏輯
+            if (c.location === 'boat') {
+                // 下船 -> 回到當前岸邊
+                c.location = boatLoc;
+                log(`${c.name} 下船。`);
+            } else {
+                // 上船
+                if (c.location !== boatLoc) {
+                    bubble(c.id, "船在對面啊！");
+                    return;
+                }
+                
+                const boatSize = getBoatSize();
+                if (boatSize + c.size > 2) {
+                    bubble(c.id, "擠不下啦！");
+                    log("船滿了。");
+                    return;
+                }
+                
+                c.location = 'boat';
+                log(`${c.name} 上船。`);
+            }
+            render();
+        }
+
+        function moveBoat() {
+            if (isGameOver) return;
+
+            const onBoat = chars.filter(c => c.location === 'boat');
+            
+            // 1. 空船檢查
+            if (onBoat.length === 0) {
+                log("空船無法移動。");
+                return;
+            }
+
+            // 2. 駕駛檢查
+            const hasDriver = onBoat.some(c => c.canDrive);
+            const fu = onBoat.find(c => c.id === 'fuqunzhu');
+            const ye = onBoat.find(c => c.id === 'yeyuanzhi');
+
+            // 傅崑萁搶船 (有傅，無其他司機)
+            if (fu && !hasDriver) {
+                bubble(fu.id, "都是中央的錯！");
+                log("傅崑萁搶著開船...");
+                handleSinking('fu_drive');
+                return;
+            }
+
+            // 無人會開 (無傅，無司機)
+            if (!fu && !hasDriver) {
+                if (ye) bubble(ye.id, "抖抖抖...");
+                log("沒人會開船，船在原地打轉。");
+                return;
+            }
+
+            // 3. 船上殺人事件
+            if (checkBoatKill(onBoat)) return; // 如果有人死掉，這次移動取消
+
+            // 4. 羅智強收費
+            const luo = onBoat.find(c => c.id === 'luozhiqiang');
+            if (luo && getBoatSize() === 2) { // 滿員才收費 (假設)
+                const victim = onBoat.find(c => c.id !== 'luozhiqiang');
+                if (victim.money < 100) {
+                    bubble(luo.id, "沒錢滾下去！");
+                    kill(luo.id, `被 ${victim.name} 沒錢買書反殺推下海`); // 這裡原本邏輯是羅被丟下船
+                    // 修正：原規則是「羅被丟下船」。
+                    return;
+                } else {
+                    victim.money -= 100;
+                    luo.money += 100;
+                    bubble(luo.id, "謝謝惠顧！");
+                    log(`${luo.name} 賣了一本書給 ${victim.name} (賺100萬)。`);
+                }
+            }
+
+            // 5. 執行移動
+            const from = boatLoc;
+            const to = boatLoc === 'taiwan' ? 'china' : 'taiwan';
+            boatLoc = to;
+            log(`船從 ${from === 'taiwan' ? '台灣' : '中國'} 開往 ${to === 'china' ? '中國' : '台灣'}...`);
+            render(); // 觸發動畫
+
+            // 延遲處理抵達邏輯 (配合 CSS 1.5s 動畫)
             setTimeout(() => {
-                b.classList.remove('show');
-            }, 2000);
+                handleArrival(to);
+            }, 1500);
         }
-    }
 
-    // 記錄文字
-    function log(msg) {
-        const box = document.getElementById('log-box');
-        const p = document.createElement('p');
-        p.textContent = msg;
-        box.prepend(p); // 新訊息在最上面
-    }
+        function handleArrival(loc) {
+            if (isGameOver) return;
+            
+            // 角色強制下船到新地點 (或保留在船上，看原規則。通常是留在船上需手動下，但這裡簡化邏輯，狀態仍在船上，只是船的位置變了)
+            // 這裡我們只需更新邏輯狀態，不強制下船，但需檢查「抵達中國」的計數
 
-    function resetGame() {
-        if(confirm("確定要重置遊戲嗎？")) {
-            init();
+            const onBoat = chars.filter(c => c.location === 'boat');
+            
+            if (loc === 'china') {
+                onBoat.forEach(c => {
+                    if (!chinaArrivals.includes(c.id)) {
+                        chinaArrivals.push(c.id);
+                        log(`${c.name} 抵達中國 (第 ${chinaArrivals.length} 位)。`);
+                        
+                        // 鄭麗文計時器
+                        if (c.id === 'zhengliwen' && chinaArrivals.length > 5) {
+                            bubble(c.id, "我遲到了！氣死！");
+                            handleSinking('zheng_late');
+                        }
+                    }
+                });
+            }
+
+            // 岸上大屠殺檢查 (每次靠岸都檢查)
+            checkShoreRules();
+            checkWinCondition();
         }
-    }
 
-    // 啟動
-    init();
+        // --- 規則判定函數 ---
 
-</script>
+        function checkBoatKill(onBoat) {
+            // 必須回傳 true 如果有人死了
+            const ids = onBoat.map(c => c.id);
+            const has = (id) => ids.includes(id);
+            
+            // 韓殺傅 (無朱)
+            if (has('hanguoyu') && has('fuqunzhu') && !has('zhulilun')) {
+                bubble('hanguoyu', "下去吧你！");
+                kill('fuqunzhu', "船上被韓國瑜推下海");
+                return true;
+            }
+            // 馬殺傅 (無朱)
+            if (has('mayingjeou') && has('fuqunzhu') && !has('zhulilun')) {
+                bubble('mayingjeou', "死亡之握！");
+                kill('fuqunzhu', "船上被馬英九推下海");
+                return true;
+            }
+            // 王鴻薇殺徐
+            if (has('wanghongwei') && has('xuxiaoqin')) {
+                bubble('wanghongwei', "滾！");
+                kill('xuxiaoqin', "船上被王鴻薇丟下海");
+                return true;
+            }
+            // 王鴻薇殺男
+            const wang = onBoat.find(c => c.id === 'wanghongwei');
+            const man = onBoat.find(c => MALE_IDS.includes(c.id));
+            if (wang && man) {
+                bubble(wang.id, "變態走開！");
+                kill(man.id, "船上被王鴻薇推下海");
+                return true;
+            }
+            // 徐罵人 (無鄭) -> 船不開
+            if (has('xuxiaoqin') && !has('zhengliwen')) {
+                bubble('xuxiaoqin', "蜜獾生氣氣！");
+                log("徐巧芯狂罵，沒人敢開船。");
+                return true; // 雖然沒死，但阻擋開船，視為一種中斷
+            }
+
+            return false;
+        }
+
+        function checkShoreRules() {
+            if(isGameOver) return;
+
+            // 1. 台灣岸上 (王鴻薇, 傅崑萁)
+            const twChars = chars.filter(c => c.location === 'taiwan' && c.isAlive);
+            const hasTw = (id) => twChars.some(c => c.id === id);
+
+            // 王鴻薇亂殺
+            if (hasTw('wanghongwei')) {
+                const protectors = twChars.some(c => WANG_PROTECTORS.includes(c.id));
+                if (!protectors) {
+                    // 殺一個男的
+                    const victims = twChars.filter(c => MALE_IDS.includes(c.id) && c.id !== 'fuqunzhu');
+                    if (victims.length > 0) {
+                        const v = victims[Math.floor(Math.random() * victims.length)];
+                        bubble('wanghongwei', "沒大人我就亂殺！");
+                        kill(v.id, "台灣岸上被王鴻薇隨機殺害");
+                        return; // 一次殺一個就好，避免迴圈問題
+                    }
+                }
+            }
+
+            // 傅崑萁被殺 (無朱)
+            if (hasTw('fuqunzhu') && !hasTw('zhulilun')) {
+                if (hasTw('hanguoyu')) {
+                    bubble('hanguoyu', "岸上也殺！");
+                    kill('fuqunzhu', "台灣岸上被韓國瑜殺害");
+                } else if (hasTw('mayingjeou')) {
+                    bubble('mayingjeou', "死亡之握！");
+                    kill('fuqunzhu', "台灣岸上被馬英九殺害");
+                }
+            }
+
+            // 2. 中國岸上 (翁曉玲)
+            const cnChars = chars.filter(c => c.location === 'china' && c.isAlive);
+            const hasCn = (id) => cnChars.some(c => c.id === id);
+            
+            if (hasCn('wengxiaoling')) {
+                if (!hasCn('fuqunzhu') && !hasCn('zhengliwen')) {
+                    bubble('wengxiaoling', "誰來救我！");
+                    kill('wengxiaoling', "中國岸上無人保護被丟下海");
+                }
+            }
+        }
+
+        function handleSinking(reason) {
+            isGameOver = true;
+            let msg = "";
+            if (reason === 'fu_drive') msg = "傅崑萁開船沈沒 (全員死亡)";
+            if (reason === 'zheng_late') msg = "鄭麗文遲到暴怒沈船";
+
+            log(msg);
+            
+            // 船上全死
+            chars.filter(c => c.location === 'boat').forEach(c => c.isAlive = false);
+            
+            // 檢查解放軍條款 (中國 < 5人)
+            const cnCount = chars.filter(c => c.location === 'china' && c.isAlive).length;
+            if (cnCount < 5) {
+                log("中國岸上人數不足，解放軍肅清！");
+                chars.filter(c => c.location === 'china').forEach(c => c.isAlive = false);
+            }
+
+            // 檢查全滅
+            const cnAlive = chars.filter(c => c.location === 'china' && c.isAlive).length;
+            if (cnAlive === 0) {
+                log("中國無人生還，台灣端全體處決！");
+                chars.forEach(c => c.isAlive = false);
+            }
+            
+            render();
+            checkWinCondition();
+        }
+
+        function kill(id, reason) {
+            const c = chars.find(x => x.id === id);
+            if (c && c.isAlive) {
+                c.isAlive = false;
+                c.location = 'dead'; // 移出地圖
+                const li = document.createElement('li');
+                li.innerText = `${c.name}: ${reason}`;
+                elDeadList.appendChild(li);
+                log(`${c.name} 死亡。`);
+                render();
+            }
+        }
+
+        function checkWinCondition() {
+            if (isGameOver) return; // 已在沈船邏輯處理過
+
+            const alive = chars.filter(c => c.isAlive);
+            
+            if (alive.length === 0) {
+                endGame(false, "全體死亡！台灣人民勝利！");
+                return;
+            }
+
+            const allInChina = alive.every(c => c.location === 'china');
+            if (allInChina) {
+                if (alive.length >= 5) {
+                    endGame(true, `成功撤離 ${alive.length} 人！國民黨勝利！`);
+                } else {
+                    endGame(false, `撤離人數 (${alive.length}) 不足 5 人。任務失敗。`);
+                }
+            }
+        }
+
+        function endGame(win, msg) {
+            isGameOver = true;
+            log("=== 遊戲結束 ===");
+            log(msg);
+            alert(msg);
+            btnMove.disabled = true;
+            btnMove.textContent = '請按重置';
+            btnMove.style.background = '#999';
+        }
+
+        // --- 工具函數 ---
+        function getBoatSize() {
+            return chars.filter(c => c.location === 'boat').reduce((acc, c) => acc + c.size, 0);
+        }
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+            elLogList.prepend(li);
+        }
+
+        function bubble(id, text) {
+            const el = document.getElementById(`bubble-${id}`);
+            if (el) {
+                el.innerText = text;
+                el.classList.add('show');
+                setTimeout(() => el.classList.remove('show'), 2000);
+            }
+        }
+
+        // 啟動
+        initGame();
+
+    </script>
 </body>
 </html>
