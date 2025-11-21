@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>立委過河 V13.0 手機完美修復版</title>
+    <title>立委過河 V13.2 邏輯重構版</title>
     <style>
         /* --- 全局變數 --- */
         :root {
@@ -14,16 +14,15 @@
             --accent-red: #d32f2f;
             --card-male: #e3f2fd;
             --card-female: #fce4ec;
-            --dashboard-height: 260px; /* 定義控制區高度 */
+            --dashboard-height: 260px;
         }
 
         body {
             margin: 0;
             font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
             background-color: var(--bg-sea);
-            /* 關鍵修正：使用 dvh 解決手機網址列遮擋問題 */
-            height: 100vh; /* 舊瀏覽器兼容 */
-            height: 100dvh; /* 現代手機瀏覽器專用 */
+            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -33,21 +32,18 @@
         
         body.victory-mode { background-color: #66bb6a !important; }
         
-        /* 覆蓋層與彈窗通用 */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); z-index: 9999;
             display: none; justify-content: center; align-items: center; flex-direction: column;
         }
 
-        /* 勝利特效 */
         #victory-text {
             font-size: 40px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             text-align: center; animation: popIn 1s forwards;
         }
         @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /* 規則說明視窗 */
         #rules-box {
             background: #fff; width: 90%; max-width: 600px; max-height: 80vh;
             border-radius: 10px; padding: 20px; overflow-y: auto;
@@ -71,7 +67,6 @@
         }
         .btn-rules:active { transform: scale(0.95); }
 
-        /* 骰子視窗 */
         #dice-box {
             background: #fff; padding: 20px; border-radius: 20px; text-align: center;
             box-shadow: 0 0 20px rgba(255,255,255,0.5); width: 300px;
@@ -84,20 +79,12 @@
         }
         #btn-roll:active { transform: translateY(4px); box-shadow: none; }
 
-        /* 遊戲區域 */
-        #game-stage { 
-            flex: 1; 
-            position: relative; 
-            display: flex; 
-            overflow: hidden; 
-            /* 確保底部內容不會被 Dashboard 擋住 */
-            padding-bottom: var(--dashboard-height); 
-        }
+        #game-stage { flex: 1; position: relative; display: flex; overflow: hidden; padding-bottom: var(--dashboard-height); }
 
         @media (max-width: 768px) {
             #game-stage { flex-direction: column; }
             .bank { width: 100%; border-bottom: 4px solid #ccc; border-top: 4px solid #81c784; }
-            #area-river { width: 100%; height: 180px; flex-shrink: 0; } /* 防止河道被壓縮 */
+            #area-river { width: 100%; height: 180px; flex-shrink: 0; }
             #boat {
                 flex-direction: row; width: 220px; height: 80px;
                 transition: top 1s ease-in-out;
@@ -169,21 +156,10 @@
         .badge-driver { position: absolute; top: 2px; right: 2px; font-size: 14px; }
         .badge-ban { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; color: #d32f2f; opacity: 0.9; }
 
-        /* 關鍵修正：將 Dashboard 固定在底部 */
         #dashboard { 
-            position: fixed; /* 固定定位 */
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: var(--dashboard-height); 
-            background: #fff; 
-            border-top: 4px solid #333; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 10px; 
-            box-sizing: border-box; 
-            z-index: 1000; 
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--dashboard-height); 
+            background: #fff; border-top: 4px solid #333; display: flex; flex-direction: column; 
+            padding: 10px; box-sizing: border-box; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
         #log-container { flex: 1; background: #fafafa; border: 2px solid #ccc; border-radius: 8px; padding: 8px; overflow-y: auto; margin-bottom: 8px; }
         #log-list { margin: 0; padding: 0; list-style: none; }
@@ -322,6 +298,7 @@
     let isGameOver = false;
     let includeTPP = false;
     let deathQueue = [];
+    let hasCaseTriggered = false;
 
     function toggleRules() {
         const el = document.getElementById('rules-overlay');
@@ -362,6 +339,7 @@
         orangeRescuedOnce = false;
         isGameOver = false;
         deathQueue = [];
+        hasCaseTriggered = false;
 
         document.body.classList.remove('victory-mode');
         document.getElementById('victory-overlay').style.display = 'none';
@@ -621,6 +599,12 @@
         const ko = chars.find(c => c.id === 'kowenje');
         const peggy = chars.find(c => c.id === 'peggy');
 
+        // 自動下船: 抵達瞬間更新位置
+        onBoat.forEach(c => {
+            if(c.isAlive) c.location = boatLoc;
+        });
+        render();
+
         if (includeTPP && ko && ko.isJailed && peggy && peggy.location === 'taiwan' && peggy.isAlive && !peggy.isJailed) {
             if (koSavings < 1.2) {
                 koSavings += 0.1;
@@ -635,8 +619,10 @@
         if (boatLoc === 'china') {
             if (includeTPP) {
                 const huang = chars.find(x => x.id === 'huangkuochang');
+                // 黃國昌爆料 (扁平化邏輯)
+                let gossipTriggered = false;
                 if (tripCount <= 5 && huang && huang.location === 'taiwan' && onBoat.length > 1 && gossipCount < 3) {
-                    if (Math.random() < 0.6) { 
+                    if (Math.random() < 0.6) {
                         let candidates = onBoat.filter(c => GOSSIP_DB[c.id]);
                         let victim = null;
                         if (candidates.length > 0) {
@@ -644,12 +630,12 @@
                             if (nonDrivers.length > 0) victim = nonDrivers[Math.floor(Math.random() * nonDrivers.length)];
                             else victim = candidates[Math.floor(Math.random() * candidates.length)];
                         }
+
                         if (victim) {
-                            const driversInChina = chars.filter(c => c.location === 'china' && c.isAlive && c.canDrive);
-                            const driversOnBoat = onBoat.filter(c => c.canDrive && c.id !== victim.id);
-                            if ((driversInChina.length + driversOnBoat.length) === 0) {
+                            // SafeKill
+                            const driversInChina = chars.filter(c => c.location === 'china' && c.isAlive && c.canDrive && c.id !== victim.id);
+                            if (driversInChina.length === 0) {
                                 log(`[黃國昌] 爆料了 ${victim.name}，但為了讓船回來，暫時放過他。`, true);
-                                registerArrival(victim);
                             } else {
                                 const gossip = GOSSIP_DB[victim.id];
                                 log(`[黃國昌] 狗仔爆料：${victim.name}${gossip}！`, true);
@@ -658,18 +644,9 @@
                                 gossipCount++;
                                 log(`[黃國昌] 喃喃自語：「我手上還有 ${3 - gossipCount} 張牌可以打...」`);
                             }
-                            onBoat.filter(c => c.id !== victim.id).forEach(c => registerArrival(c));
-                        } else {
-                            onBoat.forEach(c => registerArrival(c));
                         }
-                    } else {
-                        onBoat.forEach(c => registerArrival(c));
                     }
-                } else {
-                    onBoat.forEach(c => registerArrival(c));
                 }
-            } else {
-                onBoat.forEach(c => registerArrival(c));
             }
 
             const guan = chars.find(x => x.id === 'guanchang');
@@ -681,23 +658,24 @@
             }
         }
 
+        // 登記抵達 (所有活著的人)
+        chars.filter(c => c.location === 'china' && c.isAlive).forEach(c => {
+            if (!chinaArrivals.includes(c.id)) {
+                chinaArrivals.push(c.id);
+                log(`${c.name} 抵達中國。`);
+                if (c.id === 'zhengliwen' && chinaArrivals.length > 5) {
+                    log(`[鄭麗文]：「太晚到了！氣死！」`);
+                    handleSink('zheng_late');
+                }
+            }
+        });
+
         checkShoreEvents();
         if(includeTPP) checkBetrayal();
         if(includeTPP) checkOrangeSpawn();
         
         flushDeaths();
         checkWin();
-    }
-
-    function registerArrival(c) {
-        if (c.isAlive && !chinaArrivals.includes(c.id)) {
-            chinaArrivals.push(c.id);
-            log(`${c.name} 抵達中國。`);
-            if (c.id === 'zhengliwen' && chinaArrivals.length > 5) {
-                log(`[鄭麗文]：「太晚到了！氣死！」`);
-                handleSink('zheng_late');
-            }
-        }
     }
 
     function checkBoatEvents(onBoat) {
@@ -781,7 +759,8 @@
             const peggy = chars.find(x => x.id === 'peggy');
             const isInvincible = (ko && ko.location === 'china' && peggy && peggy.location === 'china' && peggy.isAlive);
 
-            if (!isInvincible && huang && ko && huang.isAlive && ko.isAlive && !ko.isJailed && huang.location !== ko.location) {
+            if (!hasCaseTriggered && !isInvincible && huang && ko && huang.isAlive && ko.isAlive && !ko.isJailed && huang.location !== ko.location && ko.location !== 'boat') {
+                hasCaseTriggered = true;
                 log(`[黃國昌] 咆哮指控！凱思國際爆料柯文哲！`, true);
                 if (ko.location === 'china') {
                     log(`柯文哲在中國被判死刑！`);
@@ -913,9 +892,8 @@
 
     function safeKill(id, reason) {
         const driversInChina = chars.filter(c => c.location === 'china' && c.isAlive && c.canDrive && c.id !== id);
-        const driversOnBoat = (boatLoc === 'china') ? chars.filter(c => c.location === 'boat' && c.isAlive && c.canDrive && c.id !== id) : [];
         
-        if ((driversInChina.length + driversOnBoat.length) === 0) {
+        if (driversInChina.length === 0) {
             log(`(系統) 為了避免船隻擱淺，${chars.find(x=>x.id===id).name} 逃過一劫。`);
         } else {
             kill(id, reason);
