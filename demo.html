@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>立委過河 V12.5 最終修正版</title>
+    <title>立委過河 V13.0 手機完美修復版</title>
     <style>
         /* --- 全局變數 --- */
         :root {
@@ -14,13 +14,16 @@
             --accent-red: #d32f2f;
             --card-male: #e3f2fd;
             --card-female: #fce4ec;
+            --dashboard-height: 260px; /* 定義控制區高度 */
         }
 
         body {
             margin: 0;
             font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
             background-color: var(--bg-sea);
-            height: 100vh;
+            /* 關鍵修正：使用 dvh 解決手機網址列遮擋問題 */
+            height: 100vh; /* 舊瀏覽器兼容 */
+            height: 100dvh; /* 現代手機瀏覽器專用 */
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -58,12 +61,10 @@
         .close-btn {
             position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #999;
         }
-        
-        /* --- 修正點：強制設定文字顏色 --- */
         .btn-rules {
             position: absolute; top: 10px; left: 10px; z-index: 200;
             background: #fff; border: 2px solid #555;
-            color: #333 !important; /* 強制深色文字 */
+            color: #333 !important;
             padding: 8px 15px; border-radius: 25px; font-size: 14px; cursor: pointer;
             font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             transition: transform 0.1s;
@@ -84,12 +85,19 @@
         #btn-roll:active { transform: translateY(4px); box-shadow: none; }
 
         /* 遊戲區域 */
-        #game-stage { flex: 1; position: relative; display: flex; overflow: hidden; }
+        #game-stage { 
+            flex: 1; 
+            position: relative; 
+            display: flex; 
+            overflow: hidden; 
+            /* 確保底部內容不會被 Dashboard 擋住 */
+            padding-bottom: var(--dashboard-height); 
+        }
 
         @media (max-width: 768px) {
             #game-stage { flex-direction: column; }
             .bank { width: 100%; border-bottom: 4px solid #ccc; border-top: 4px solid #81c784; }
-            #area-river { width: 100%; height: 180px; }
+            #area-river { width: 100%; height: 180px; flex-shrink: 0; } /* 防止河道被壓縮 */
             #boat {
                 flex-direction: row; width: 220px; height: 80px;
                 transition: top 1s ease-in-out;
@@ -101,7 +109,7 @@
         }
 
         @media (min-width: 769px) {
-            #game-stage { flex-direction: row; }
+            #game-stage { flex-direction: row; padding-bottom: var(--dashboard-height); }
             .bank { height: 100%; width: 30%; border-right: 4px solid #ccc; border-left: 4px solid #81c784; }
             #area-river { flex: 1; height: 100%; }
             #boat {
@@ -112,13 +120,11 @@
             #boat.at-taiwan { left: calc(100% - 240px); }
             #boat.at-china { left: 20px; }
             .geo-label { width: 100%; text-align: center; padding: 15px 0; font-size: 24px !important; }
-            #log-container { height: 200px; }
-            #dashboard { height: 300px !important; }
         }
 
         .bank {
             position: relative; display: flex; flex-direction: column; align-items: center;
-            padding: 10px; overflow-y: auto;
+            padding: 10px; overflow-y: auto; flex: 1;
         }
         #area-china { background-color: var(--bg-china); order: 1; }
         #area-river { position: relative; order: 2; z-index: 10; }
@@ -163,8 +169,22 @@
         .badge-driver { position: absolute; top: 2px; right: 2px; font-size: 14px; }
         .badge-ban { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; color: #d32f2f; opacity: 0.9; }
 
-        /* 控制面板 */
-        #dashboard { height: 260px; background: #fff; border-top: 4px solid #333; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; z-index: 100; }
+        /* 關鍵修正：將 Dashboard 固定在底部 */
+        #dashboard { 
+            position: fixed; /* 固定定位 */
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--dashboard-height); 
+            background: #fff; 
+            border-top: 4px solid #333; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            z-index: 1000; 
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
         #log-container { flex: 1; background: #fafafa; border: 2px solid #ccc; border-radius: 8px; padding: 8px; overflow-y: auto; margin-bottom: 8px; }
         #log-list { margin: 0; padding: 0; list-style: none; }
         .log-item { font-size: 16px; line-height: 1.5; border-bottom: 1px dashed #ddd; padding: 5px 0; color: #333; }
@@ -615,7 +635,6 @@
         if (boatLoc === 'china') {
             if (includeTPP) {
                 const huang = chars.find(x => x.id === 'huangkuochang');
-                // 黃國昌爆料
                 if (tripCount <= 5 && huang && huang.location === 'taiwan' && onBoat.length > 1 && gossipCount < 3) {
                     if (Math.random() < 0.6) { 
                         let candidates = onBoat.filter(c => GOSSIP_DB[c.id]);
