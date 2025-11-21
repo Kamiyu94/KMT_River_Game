@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>立委過河 V12.0 終極版</title>
+    <title>立委過河 V12.5 最終修正版</title>
     <style>
         /* --- 全局變數 --- */
         :root {
@@ -29,17 +29,61 @@
         }
         
         body.victory-mode { background-color: #66bb6a !important; }
-        #victory-overlay {
+        
+        /* 覆蓋層與彈窗通用 */
+        .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9999;
+            background: rgba(0,0,0,0.8); z-index: 9999;
             display: none; justify-content: center; align-items: center; flex-direction: column;
         }
+
+        /* 勝利特效 */
         #victory-text {
             font-size: 40px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             text-align: center; animation: popIn 1s forwards;
         }
         @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
+        /* 規則說明視窗 */
+        #rules-box {
+            background: #fff; width: 90%; max-width: 600px; max-height: 80vh;
+            border-radius: 10px; padding: 20px; overflow-y: auto;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            position: relative; font-size: 15px; line-height: 1.6;
+        }
+        #rules-box h2 { margin-top: 0; color: #d32f2f; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        #rules-box h3 { margin: 15px 0 5px; color: #333; background: #eee; padding: 5px; border-radius: 4px; }
+        #rules-box ul { padding-left: 20px; margin: 5px 0; }
+        #rules-box li { margin-bottom: 5px; }
+        .close-btn {
+            position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #999;
+        }
+        
+        /* --- 修正點：強制設定文字顏色 --- */
+        .btn-rules {
+            position: absolute; top: 10px; left: 10px; z-index: 200;
+            background: #fff; border: 2px solid #555;
+            color: #333 !important; /* 強制深色文字 */
+            padding: 8px 15px; border-radius: 25px; font-size: 14px; cursor: pointer;
+            font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .btn-rules:active { transform: scale(0.95); }
+
+        /* 骰子視窗 */
+        #dice-box {
+            background: #fff; padding: 20px; border-radius: 20px; text-align: center;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5); width: 300px;
+        }
+        #dice-display { font-size: 80px; margin: 20px 0; }
+        #dice-msg { font-size: 18px; margin-bottom: 20px; color: #555; }
+        #btn-roll {
+            background: #ff9800; color: white; border: none; padding: 10px 30px;
+            font-size: 24px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #e65100;
+        }
+        #btn-roll:active { transform: translateY(4px); box-shadow: none; }
+
+        /* 遊戲區域 */
         #game-stage { flex: 1; position: relative; display: flex; overflow: hidden; }
 
         @media (max-width: 768px) {
@@ -119,23 +163,7 @@
         .badge-driver { position: absolute; top: 2px; right: 2px; font-size: 14px; }
         .badge-ban { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; color: #d32f2f; opacity: 0.9; }
 
-        #dice-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 2000;
-            display: none; justify-content: center; align-items: center; flex-direction: column;
-        }
-        #dice-box {
-            background: #fff; padding: 20px; border-radius: 20px; text-align: center;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5); width: 300px;
-        }
-        #dice-display { font-size: 80px; margin: 20px 0; }
-        #dice-msg { font-size: 18px; margin-bottom: 20px; color: #555; }
-        #btn-roll {
-            background: #ff9800; color: white; border: none; padding: 10px 30px;
-            font-size: 24px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #e65100;
-        }
-        #btn-roll:active { transform: translateY(4px); box-shadow: none; }
-        
+        /* 控制面板 */
         #dashboard { height: 260px; background: #fff; border-top: 4px solid #333; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; z-index: 100; }
         #log-container { flex: 1; background: #fafafa; border: 2px solid #ccc; border-radius: 8px; padding: 8px; overflow-y: auto; margin-bottom: 8px; }
         #log-list { margin: 0; padding: 0; list-style: none; }
@@ -150,13 +178,47 @@
     </style>
 </head>
 <body>
-    <div id="victory-overlay">
+    <button class="btn-rules" onclick="toggleRules()">📖 遊戲說明書</button>
+
+    <div id="rules-overlay" class="overlay">
+        <div id="rules-box">
+            <span class="close-btn" onclick="toggleRules()">&times;</span>
+            <h2>📑 立委渡河作戰計畫</h2>
+            <h3>🎯 任務目標</h3>
+            <p>將立委運送至中國。成功抵達 5 人以上即為「投誠成功」；若全軍覆沒，則為「台灣人民勝利」。</p>
+            
+            <h3>⚠️ 重要提示 (國民黨)</h3>
+            <ul>
+                <li><b>傅崑萁</b>：身價 500 萬，但駕駛技術堪憂，若沒人幫他開船會沈船。</li>
+                <li><b>羅智強</b>：會向同船者強迫推銷 100 萬的書，沒錢付就會被推下海。</li>
+                <li><b>徐巧芯</b>：嘴砲輸出。若<b>鄭麗文</b>不在船上壓制她，她會罵到船開不動。</li>
+                <li><b>王鴻薇</b>：情緒不穩，整場遊戲會隨機對一名同黨男性出手。</li>
+                <li><b>鄭麗文</b>：必須在前 5 位抵達，否則會遲到暴怒翻船。</li>
+                <li><b>馬/韓</b>：若朱立倫不在，他們會對傅崑萁不利。</li>
+                <li><b>陳玉珍</b>：重量級人物，一人佔 2 個船位。</li>
+            </ul>
+
+            <h3>⚠️ 民眾黨 (可選模式)</h3>
+            <ul>
+                <li><b>柯文哲</b>：話很多，開船會拖延。若在台灣被羈押，請等待救援。</li>
+                <li><b>黃國昌</b>：<b>【關鍵】</b>若他太晚去中國，會用狗仔毀滅前 5 批抵達的人。</li>
+                <li><b>陳珮琪</b>：柯文哲的金庫。若夫妻同在中國可觸發「豪宅無敵」模式。</li>
+                <li><b>館長</b>：喜歡在對岸大放厥詞，但請小心中國人民的耐心。</li>
+                <li><b>吳怡萱</b>：雖然只是發言人，但若落單遇到國民黨女將，可能會遭遇不測。</li>
+            </ul>
+
+            <h3>🔒 隱藏要素</h3>
+            <p>除了現在看到的 16 人，還有一個隱藏人物，只在符合條件的時候出現，你能找得到她嗎？</p>
+        </div>
+    </div>
+
+    <div id="victory-overlay" class="overlay">
         <div style="font-size:80px;">🎉🎉🎉</div>
         <div id="victory-text">台灣人民大勝利</div>
         <div style="font-size:20px; color:white; margin-top:10px;">天佑台灣 歲月靜好</div>
     </div>
 
-    <div id="dice-overlay">
+    <div id="dice-overlay" class="overlay">
         <div id="dice-box">
             <h2>🍊 橘子救援行動</h2>
             <div id="dice-msg">...</div>
@@ -241,26 +303,31 @@
     let includeTPP = false;
     let deathQueue = [];
 
+    function toggleRules() {
+        const el = document.getElementById('rules-overlay');
+        el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    }
+
     function startNewGame() {
-        if (confirm("是否讓民眾黨參加本次撤離行動？")) {
-            includeTPP = true;
-            chars = JSON.parse(JSON.stringify(ALL_CHARS));
-        } else {
-            includeTPP = false;
-            chars = JSON.parse(JSON.stringify(ALL_CHARS.filter(c => c.type === 'kmt')));
-        }
-        initGame();
+        setTimeout(() => {
+            if (confirm("是否讓民眾黨參加本次撤離行動？")) {
+                includeTPP = true;
+                chars = JSON.parse(JSON.stringify(ALL_CHARS));
+            } else {
+                includeTPP = false;
+                chars = JSON.parse(JSON.stringify(ALL_CHARS.filter(c => c.type === 'kmt')));
+            }
+            initGame();
+        }, 100);
     }
 
     function initGame() {
-        // Reset properties
         chars.forEach(c => {
             c.location = 'taiwan';
             c.isAlive = true;
             c.isJailed = false;
             c.isBald = false;
         });
-        // If resetting without reloading page, ensure chars are correct based on mode
         if(!includeTPP) chars = chars.filter(c => c.type === 'kmt');
 
         boatLoc = 'taiwan';
@@ -278,6 +345,8 @@
 
         document.body.classList.remove('victory-mode');
         document.getElementById('victory-overlay').style.display = 'none';
+        document.getElementById('dice-overlay').style.display = 'none';
+        document.getElementById('rules-overlay').style.display = 'none';
         document.getElementById('log-list').innerHTML = '';
         const btn = document.getElementById('btn-move');
         btn.textContent = "🚢 開船";
@@ -349,10 +418,9 @@
         if (isGameOver) return;
         const c = chars.find(x => x.id === id);
 
-        // 陳珮琪拒絕上船
         const ko = chars.find(x => x.id === 'kowenje');
         if (c.id === 'peggy' && c.location === 'taiwan' && ko && ko.isJailed) {
-            alert("陳珮琪：「我不能走！我要留下來轉帳救阿北！」");
+            setTimeout(() => alert("陳珮琪：「我不能走！我要留下來轉帳救阿北！」"), 50);
             return;
         }
 
@@ -361,7 +429,7 @@
             if (c.id === 'kowenje' && orange && orange.location === 'taiwan' && !orange.isJailed) {
                 openDiceModal();
             } else {
-                alert("嗡...嗡...嗡... (此人羈押中)");
+                setTimeout(() => alert("嗡...嗡...嗡... (此人羈押中)"), 50);
             }
             return;
         }
@@ -370,8 +438,8 @@
             c.location = boatLoc;
             koCoughed = false;
         } else {
-            if (c.location !== boatLoc) { alert("船在對面！"); return; }
-            if (getBoatSize() + c.size > 2) { alert("船滿了！"); return; }
+            if (c.location !== boatLoc) { setTimeout(() => alert("船在對面！"), 50); return; }
+            if (getBoatSize() + c.size > 2) { setTimeout(() => alert("船滿了！"), 50); return; }
             c.location = 'boat';
             koCoughed = false;
         }
@@ -400,7 +468,7 @@
                     return;
                 }
             } else {
-                alert("橘子現金不足2億，柯文哲存款也不夠！"); 
+                setTimeout(() => alert("橘子現金不足2億，柯文哲存款也不夠！"), 50); 
                 return; 
             }
         }
@@ -451,12 +519,12 @@
             } else {
                 if (totalAssets >= 2.0 && !orangeRescuedOnce) {
                     log(`[橘子] 擲出 ${roll} 救援失敗！但因資產雄厚，成功規避羈押！`, true);
-                    alert("救援失敗！但逃過一劫，橘子可以再次嘗試！");
+                    setTimeout(() => alert("救援失敗！但逃過一劫，橘子可以再次嘗試！"), 100);
                     orangeRescuedOnce = true;
                 } else {
                     log(`[橘子] 擲出 ${roll}，救援失敗！`, true);
                     orange.money = 0; orange.isJailed = true;
-                    alert("救援失敗，橘子被羈押禁見！");
+                    setTimeout(() => alert("救援失敗，橘子被羈押禁見！"), 100);
                 }
             }
             render();
@@ -467,11 +535,11 @@
     function moveBoat() {
         if (isGameOver) return;
         const onBoat = chars.filter(c => c.location === 'boat');
-        if (onBoat.length === 0) { alert("空船！"); return; }
+        if (onBoat.length === 0) { setTimeout(() => alert("空船！"), 50); return; }
 
         const ko = onBoat.find(c => c.id === 'kowenje');
         if (ko && !koCoughed) {
-            alert("柯文哲：「咳咳！我是覺得怪怪的啦...（下略三千字）」\n因為廢話太多，船沒開成，請再試一次。");
+            setTimeout(() => alert("柯文哲：「咳咳！我是覺得怪怪的啦...（下略三千字）」\n因為廢話太多，船沒開成，請再試一次。"), 50);
             koCoughed = true; return; 
         }
 
@@ -517,10 +585,10 @@
         if (speakers.length > 0) {
             const s = speakers[Math.floor(Math.random()*speakers.length)];
             let msg = "船不動...";
-            if(s.id === 'xuxiaoqin') msg = "司機呢？拿密錄器揭發弊案！";
-            if(s.id === 'wanghongwei') msg = "船不動？我要召開記者會！";
-            if(s.id === 'wengxiaoling') msg = "我命令這艘船開動！我比你大！";
-            if(s.id === 'fuqunzhu') msg = "連船都卡？民進黨打壓！";
+            if(s.id === 'xuxiaoqin') msg = "司機呢？是不是躲起來了？我要拿出密錄器揭發這個弊案！";
+            if(s.id === 'wanghongwei') msg = "船不動？這背後一定有不可告人的政商勾結！我要立刻召開記者會！";
+            if(s.id === 'wengxiaoling') msg = "我以立法院最高權力命令這艘船：馬上開動！我是立委，我比你大！";
+            if(s.id === 'fuqunzhu') msg = "連船都被卡？這明顯是民進黨中央政府在打壓我們花蓮人！";
             log(`[${s.name}]：「${msg}」`, true);
         } else {
             log("無人駕駛，船在原地打轉。", true);
@@ -539,7 +607,7 @@
                 koSavings = Math.round(koSavings * 10) / 10;
                 log(`[陳珮琪] 轉帳 1000 萬救夫！(柯累積: ${koSavings.toFixed(1)}億)`);
             } else if (!peggySaidNoMore) {
-                alert("陳珮琪：「買豪宅的錢都在這了，沒了。」(停止轉帳)");
+                setTimeout(() => alert("陳珮琪：「買豪宅的錢都在這了，沒了。」(停止轉帳)"), 100);
                 peggySaidNoMore = true;
             }
         }
@@ -581,21 +649,21 @@
                 } else {
                     onBoat.forEach(c => registerArrival(c));
                 }
-
-                const guan = chars.find(x => x.id === 'guanchang');
-                if (guan && guan.location === 'china' && guan.isAlive) {
-                    const propaganda = ["中國有自動販賣機！", "中國廁所有門！", "中國高鐵有靠背！", "台灣珍奶800你敢信？"];
-                    const idx = (chinaArrivals.length % 4); 
-                    log(`[館長]：「${propaganda[idx]}」`, true);
-                    if (idx === 3) safeKill('guanchang', '造謠被推下海');
-                }
             } else {
                 onBoat.forEach(c => registerArrival(c));
+            }
+
+            const guan = chars.find(x => x.id === 'guanchang');
+            if (guan && guan.location === 'china' && guan.isAlive) {
+                const propaganda = ["中國有自動販賣機！", "中國廁所有門！", "中國高鐵有靠背！", "台灣珍奶800你敢信？"];
+                const idx = (chinaArrivals.length % 4); 
+                log(`[館長]：「${propaganda[idx]}」`, true);
+                if (idx === 3) safeKill('guanchang', '造謠被推下海');
             }
         }
 
         checkShoreEvents();
-        if(includeTPP) checkBetrayal(); // 過河拆橋檢查
+        if(includeTPP) checkBetrayal();
         if(includeTPP) checkOrangeSpawn();
         
         flushDeaths();
@@ -767,7 +835,6 @@
         }
     }
 
-    // 過河拆橋
     function checkBetrayal() {
         const twKMT = chars.filter(c => c.location === 'taiwan' && c.type === 'kmt' && c.isAlive).length;
         const twTPP = chars.filter(c => c.location === 'taiwan' && c.type === 'tpp' && c.isAlive).length;
@@ -778,7 +845,6 @@
                 kill(c.id, '被KMT舉報叛國處決');
             });
 
-            // 館長復仇
             const guan = chars.find(x => x.id === 'guanchang');
             if (guan && guan.location === 'china' && guan.isAlive) {
                 const kmtTargets = chars.filter(c => c.location === 'china' && c.type === 'kmt' && c.isAlive);
@@ -791,7 +857,6 @@
                 kill('guanchang', '被解放軍槍決');
             }
 
-            // 黃國昌投誠
             const huang = chars.find(x => x.id === 'huangkuochang');
             if (huang && huang.location === 'china' && huang.isAlive) {
                 log(`[黃國昌] 發表宣言加入國民黨！`);
@@ -819,7 +884,7 @@
         const twCount = chars.filter(c => c.location === 'taiwan' && c.isAlive && !c.isJailed).length;
         
         if (ko && ko.isJailed && twCount <= 6 && !orange) {
-            alert("🍊 橘子帶著 3.5 億現身台灣救援阿北！");
+            setTimeout(() => alert("🍊 橘子帶著 3.5 億現身台灣救援阿北！"), 100);
             log(`🍊 [橘子] 帶著3.5億現身台灣救援阿北！`, true);
             chars.push(JSON.parse(JSON.stringify(ORANGE_DATA)));
             chars.find(x=>x.id==='orange').location = 'taiwan';
@@ -868,7 +933,7 @@
             if (chars.filter(c => c.isAlive).length === 0) {
                 endGame("國眾兩黨滅亡！台灣人民的勝利！");
             } else {
-                alert("遊戲結束 (沈船)");
+                setTimeout(() => alert("遊戲結束 (沈船)"), 100);
             }
         }, 500);
     }
@@ -886,7 +951,8 @@
 
     function flushDeaths() {
         if (deathQueue.length > 0) {
-            alert("💀 死亡通知：\n" + deathQueue.join("\n"));
+            const msg = "💀 死亡通知：\n" + deathQueue.join("\n");
+            setTimeout(() => alert(msg), 100);
             deathQueue = [];
         }
     }
@@ -928,7 +994,7 @@
 
     function endGame(msg) {
         isGameOver = true;
-        flushDeaths(); // Ensure any pending deaths are shown
+        flushDeaths();
         log(`=== ${msg} ===`, true);
         
         if (msg.includes("台灣人民的勝利")) {
