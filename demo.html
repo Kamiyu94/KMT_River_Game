@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>立委過河 V13.3 最終流暢版</title>
+    <title>立委過河 V14.0 智慧介面版</title>
     <style>
         /* --- 全局變數 --- */
         :root {
@@ -14,7 +14,7 @@
             --accent-red: #d32f2f;
             --card-male: #e3f2fd;
             --card-female: #fce4ec;
-            --dashboard-height: 260px;
+            --dashboard-height: 260px; /* 預設高度 */
         }
 
         body {
@@ -32,26 +32,18 @@
         
         body.victory-mode { background-color: #66bb6a !important; }
         
-        /* 覆蓋層與彈窗通用 */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); z-index: 9999;
             display: none; justify-content: center; align-items: center; flex-direction: column;
         }
 
-        /* 勝利特效 (修正：可點擊) */
-        #victory-overlay {
-            background: rgba(0,0,0,0.3); /* 稍微透一點綠 */
-            cursor: pointer; /* 讓鼠標變手手 */
-            pointer-events: auto; /* 允許接收點擊 */
-        }
         #victory-text {
             font-size: 40px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             text-align: center; animation: popIn 1s forwards;
         }
         @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /* 規則說明視窗 */
         #rules-box {
             background: #fff; width: 90%; max-width: 600px; max-height: 80vh;
             border-radius: 10px; padding: 20px; overflow-y: auto;
@@ -75,7 +67,6 @@
         }
         .btn-rules:active { transform: scale(0.95); }
 
-        /* 骰子視窗 */
         #dice-box {
             background: #fff; padding: 20px; border-radius: 20px; text-align: center;
             box-shadow: 0 0 20px rgba(255,255,255,0.5); width: 300px;
@@ -88,8 +79,11 @@
         }
         #btn-roll:active { transform: translateY(4px); box-shadow: none; }
 
-        /* 遊戲區域 */
-        #game-stage { flex: 1; position: relative; display: flex; overflow: hidden; padding-bottom: var(--dashboard-height); }
+        /* 遊戲區域：底部留白由變數控制 */
+        #game-stage { 
+            flex: 1; position: relative; display: flex; overflow: hidden; 
+            padding-bottom: var(--dashboard-height); 
+        }
 
         @media (max-width: 768px) {
             #game-stage { flex-direction: column; }
@@ -141,10 +135,11 @@
             display: flex; justify-content: center; align-items: center; gap: 10px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.4); z-index: 50;
         }
+        /* 修正點：字體放大 */
         #boat::after {
-            content: "2人座"; position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
-            font-size: 12px; color: #333; font-weight: bold;
-            background: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 4px;
+            content: "2人座"; position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+            font-size: 16px; color: #333; font-weight: bold;
+            background: rgba(255,255,255,0.7); padding: 2px 8px; border-radius: 4px;
         }
 
         .card {
@@ -166,11 +161,24 @@
         .badge-driver { position: absolute; top: 2px; right: 2px; font-size: 14px; }
         .badge-ban { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; color: #d32f2f; opacity: 0.9; }
 
+        /* --- Dashboard & Resizer --- */
         #dashboard { 
             position: fixed; bottom: 0; left: 0; width: 100%; height: var(--dashboard-height); 
-            background: #fff; border-top: 4px solid #333; display: flex; flex-direction: column; 
-            padding: 10px; box-sizing: border-box; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            background: #fff; border-top: 1px solid #999; display: flex; flex-direction: column; 
+            padding: 0 10px 10px 10px; box-sizing: border-box; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
+        
+        /* 拖曳控制桿 */
+        #drag-handle {
+            width: 100%; height: 24px; background: #e0e0e0; margin-bottom: 5px;
+            cursor: row-resize; display: flex; justify-content: center; align-items: center;
+            border-radius: 0 0 5px 5px; border-bottom: 1px solid #ccc;
+            touch-action: none; /* 防止觸控時捲動頁面 */
+        }
+        #drag-handle::after {
+            content: ''; width: 40px; height: 4px; background: #999; border-radius: 2px;
+        }
+
         #log-container { flex: 1; background: #fafafa; border: 2px solid #ccc; border-radius: 8px; padding: 8px; overflow-y: auto; margin-bottom: 8px; }
         #log-list { margin: 0; padding: 0; list-style: none; }
         .log-item { font-size: 16px; line-height: 1.5; border-bottom: 1px dashed #ddd; padding: 5px 0; color: #333; }
@@ -192,27 +200,22 @@
             <h2>📑 立委渡河作戰計畫</h2>
             <h3>🎯 任務目標</h3>
             <p>將立委運送至中國。成功抵達 5 人以上即為「投誠成功」；若全軍覆沒，則為「台灣人民勝利」。</p>
-            
             <h3>⚠️ 重要提示 (國民黨)</h3>
             <ul>
-                <li><b>傅崑萁</b>：身價 500 萬，但駕駛技術堪憂，若沒人幫他開船會沈船。</li>
-                <li><b>羅智強</b>：會向同船者強迫推銷 100 萬的書，沒錢付就會被推下海。</li>
-                <li><b>徐巧芯</b>：嘴砲輸出。若<b>鄭麗文</b>不在船上壓制她，她會罵到船開不動。</li>
-                <li><b>王鴻薇</b>：情緒不穩，整場遊戲會隨機對一名同黨男性出手。</li>
-                <li><b>鄭麗文</b>：必須在前 5 位抵達，否則會遲到暴怒翻船。</li>
-                <li><b>馬/韓</b>：若朱立倫不在，他們會對傅崑萁不利。</li>
-                <li><b>陳玉珍</b>：重量級人物，一人佔 2 個船位。</li>
+                <li><b>傅崑萁</b>：身價 500 萬，不會開船，若獨處會沈船。</li>
+                <li><b>羅智強</b>：收費員 (100萬)，沒錢付會被推下海。</li>
+                <li><b>徐巧芯</b>：嘴砲輸出。需鄭麗文壓制，否則船不開。</li>
+                <li><b>王鴻薇</b>：整場隨機攻擊一次同黨男性。</li>
+                <li><b>鄭麗文</b>：必須在前 5 位抵達，否則遲到沈船。</li>
+                <li><b>陳玉珍</b>：坦克，佔 2 個船位。</li>
             </ul>
-
             <h3>⚠️ 民眾黨 (可選模式)</h3>
             <ul>
-                <li><b>柯文哲</b>：話很多，開船會拖延。若在台灣被羈押，請等待救援。</li>
-                <li><b>黃國昌</b>：<b>【關鍵】</b>若他太晚去中國，會用狗仔毀滅前 5 批抵達的人。</li>
-                <li><b>陳珮琪</b>：柯文哲的金庫。若夫妻同在中國可觸發「豪宅無敵」模式。</li>
-                <li><b>館長</b>：喜歡在對岸大放厥詞，但請小心中國人民的耐心。</li>
-                <li><b>吳怡萱</b>：雖然只是發言人，但若落單遇到國民黨女將，可能會遭遇不測。</li>
+                <li><b>柯文哲</b>：話多拖延。若被關需等待救援。</li>
+                <li><b>黃國昌</b>：若太晚去中國，會爆料攻擊前 5 批抵達者。</li>
+                <li><b>陳珮琪</b>：金庫。夫妻同在中國觸發豪宅無敵。</li>
+                <li><b>館長</b>：在對岸大放厥詞會出事。</li>
             </ul>
-
             <h3>🔒 隱藏要素</h3>
             <p>除了現在看到的 16 人，還有一個隱藏人物，只在符合條件的時候出現，你能找得到她嗎？</p>
         </div>
@@ -249,6 +252,7 @@
     </div>
 
     <div id="dashboard">
+        <div id="drag-handle"></div>
         <div id="log-container">
             <ul id="log-list"></ul>
         </div>
@@ -259,6 +263,39 @@
     </div>
 
 <script>
+    // --- 拖曳視窗邏輯 ---
+    const dashboard = document.getElementById('dashboard');
+    const handle = document.getElementById('drag-handle');
+    let isResizing = false;
+
+    const startResize = (e) => {
+        isResizing = true;
+        // 防止選取文字
+        e.preventDefault(); 
+    };
+
+    const performResize = (clientY) => {
+        if (!isResizing) return;
+        const newHeight = window.innerHeight - clientY;
+        // 限制高度範圍：最小 150px，最大螢幕的 80%
+        if (newHeight > 150 && newHeight < window.innerHeight * 0.8) {
+            document.documentElement.style.setProperty('--dashboard-height', newHeight + 'px');
+        }
+    };
+
+    const stopResize = () => { isResizing = false; };
+
+    // Mouse events
+    handle.addEventListener('mousedown', startResize);
+    window.addEventListener('mousemove', (e) => performResize(e.clientY));
+    window.addEventListener('mouseup', stopResize);
+
+    // Touch events
+    handle.addEventListener('touchstart', (e) => startResize(e.touches[0]));
+    window.addEventListener('touchmove', (e) => performResize(e.touches[0].clientY));
+    window.addEventListener('touchend', stopResize);
+
+
     const GOSSIP_DB = {
         'fuqunzhu': '自稱代表台灣中央政府，暗示台灣獨立',
         'xuxiaoqin': '違停還對交警比中指，並曾哭倒在有婦之夫懷裡',
@@ -317,9 +354,7 @@
     }
 
     function startNewGame() {
-        // 重置時先確認 victory overlay 關閉，避免雙重點擊
         document.getElementById('victory-overlay').style.display = 'none';
-        
         setTimeout(() => {
             if (confirm("是否讓民眾黨參加本次撤離行動？")) {
                 includeTPP = true;
@@ -613,9 +648,13 @@
         const ko = chars.find(c => c.id === 'kowenje');
         const peggy = chars.find(c => c.id === 'peggy');
 
-        // 自動下船: 抵達瞬間更新位置
+        // 智慧下船：駕駛員留船 (除了陳玉珍)
         onBoat.forEach(c => {
-            if(c.isAlive) c.location = boatLoc;
+            if (c.isAlive) {
+                if (!c.canDrive || c.id === 'chenyuzhen') {
+                    c.location = boatLoc;
+                }
+            }
         });
         render();
 
@@ -633,9 +672,8 @@
         if (boatLoc === 'china') {
             if (includeTPP) {
                 const huang = chars.find(x => x.id === 'huangkuochang');
-                // 黃國昌爆料
                 if (tripCount <= 5 && huang && huang.location === 'taiwan' && onBoat.length > 1 && gossipCount < 3) {
-                    if (Math.random() < 0.6) {
+                    if (Math.random() < 0.6) { 
                         let candidates = onBoat.filter(c => GOSSIP_DB[c.id]);
                         let victim = null;
                         if (candidates.length > 0) {
@@ -643,11 +681,11 @@
                             if (nonDrivers.length > 0) victim = nonDrivers[Math.floor(Math.random() * nonDrivers.length)];
                             else victim = candidates[Math.floor(Math.random() * candidates.length)];
                         }
-
                         if (victim) {
-                            // SafeKill
                             const driversInChina = chars.filter(c => c.location === 'china' && c.isAlive && c.canDrive && c.id !== victim.id);
-                            if (driversInChina.length === 0) {
+                            const driversOnBoat = onBoat.filter(c => c.canDrive && c.id !== victim.id && c.isAlive);
+                            
+                            if ((driversInChina.length + driversOnBoat.length) === 0) {
                                 log(`[黃國昌] 爆料了 ${victim.name}，但為了讓船回來，暫時放過他。`, true);
                                 registerArrival(victim);
                             } else {
@@ -658,7 +696,6 @@
                                 gossipCount++;
                                 log(`[黃國昌] 喃喃自語：「我手上還有 ${3 - gossipCount} 張牌可以打...」`);
                             }
-                            // 其他人
                             onBoat.filter(c => c.id !== victim.id).forEach(c => registerArrival(c));
                         } else {
                             onBoat.forEach(c => registerArrival(c));
@@ -682,7 +719,6 @@
             }
         }
 
-        // 登記抵達
         chars.filter(c => c.location === 'china' && c.isAlive).forEach(c => {
             if (!chinaArrivals.includes(c.id)) {
                 chinaArrivals.push(c.id);
@@ -700,17 +736,6 @@
         
         flushDeaths();
         checkWin();
-    }
-
-    function registerArrival(c) {
-        if (c.isAlive && !chinaArrivals.includes(c.id)) {
-            chinaArrivals.push(c.id);
-            log(`${c.name} 抵達中國。`);
-            if (c.id === 'zhengliwen' && chinaArrivals.length > 5) {
-                log(`[鄭麗文]：「太晚到了！氣死！」`);
-                handleSink('zheng_late');
-            }
-        }
     }
 
     function checkBoatEvents(onBoat) {
@@ -927,8 +952,9 @@
 
     function safeKill(id, reason) {
         const driversInChina = chars.filter(c => c.location === 'china' && c.isAlive && c.canDrive && c.id !== id);
+        const driversOnBoat = (boatLoc === 'china') ? chars.filter(c => c.location === 'boat' && c.isAlive && c.canDrive && c.id !== id && c.isAlive) : [];
         
-        if (driversInChina.length === 0) {
+        if ((driversInChina.length + driversOnBoat.length) === 0) {
             log(`(系統) 為了避免船隻擱淺，${chars.find(x=>x.id===id).name} 逃過一劫。`);
         } else {
             kill(id, reason);
