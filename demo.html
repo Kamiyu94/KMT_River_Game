@@ -485,14 +485,24 @@
 
     function openDiceModal() {
         const orange = chars.find(x => x.id === 'orange');
+        const ko = chars.find(x => x.id === 'kowenje');
+        // 這裡要小心，因為 koSavings 是浮點數，orange.money 也是，加總可能有誤差
+        // 我們只看「能不能付兩次錢」(總資產 >= 4億? 或者您之前的設定是橘子有錢就好?)
+        // 根據之前的邏輯：總資產 >= 2.0 (因為橘子初始3.5)，其實是一定夠的
+        // 但為了邏輯嚴謹，我們維持之前的判斷
         const totalAssets = orange.money + koSavings;
         
-        let msg = "花費2億，骰出 5 或 6 救阿北！";
+        // --- 修正部分開始 ---
+        let msg = "花費 2 億，<br>骰出 <b style='color:red;font-size:24px'>5, 6</b> 即可救出阿北！";
+        
         if (totalAssets >= 2.0 && !orangeRescuedOnce) {
-            msg = "資產充足(>2億)！本次若失敗不會被關，可二刷！(費用2億)";
+            // 富豪模式：加上補充說明，而不是覆蓋
+            msg += "<br><br><span style='color:#2e7d32;font-weight:bold'>(💰 資產充足！本次若失敗不會被關，可二刷！)</span>";
         } else if (orangeRescuedOnce) {
-            msg = "第二次機會！只有骰出 6 才能成功！(費用2億)";
+            // 二刷模式：難度變高
+            msg = "第二次機會！<br>只有骰出 <b style='color:red;font-size:24px'>6</b> 才能成功！<br>(費用 2 億)";
         }
+        // --- 修正部分結束 ---
 
         if (orange.money < 2) {
             const needed = 2 - orange.money;
@@ -501,17 +511,19 @@
                 if (confirm(`橘子身上只有 ${orange.money}億。是否從柯文哲帳戶轉 ${neededFixed}億 給橘子？`)) {
                     koSavings -= neededFixed;
                     orange.money += neededFixed;
+                    orange.money = Math.round(orange.money * 10) / 10;
+                    koSavings = Math.round(koSavings * 10) / 10;
                 } else {
                     return;
                 }
             } else {
-                setTimeout(() => alert("橘子現金不足2億，柯文哲存款也不夠！"), 50); 
+                setTimeout(() => alert("橘子現金不足 2 億，柯文哲存款也不夠！"), 50); 
                 return; 
             }
         }
         
         document.getElementById('dice-overlay').style.display = 'flex';
-        document.getElementById('dice-msg').textContent = msg;
+        document.getElementById('dice-msg').innerHTML = msg;
         document.getElementById('dice-display').textContent = '🎲';
         document.getElementById('btn-roll').disabled = false;
     }
